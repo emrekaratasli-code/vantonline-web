@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap');
+
+@layer base {
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    html {
+        scroll-behavior: smooth;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+        @apply bg-vant-black text-vant-light font-body;
+        overflow-x: hidden;
+    }
+
+    ::selection {
+        @apply bg-vant-purple text-white;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        @apply bg-vant-black;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        @apply bg-vant-muted rounded-full;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        @apply bg-vant-purple;
+    }
+}
+
+@layer components {
+
+    /* Grain / noise overlay */
+    .grain-overlay {
+        position: fixed;
+        top: -50%;
+        left: -50%;
+        right: -50%;
+        bottom: -50%;
+        width: 200%;
+        height: 200%;
+        background: transparent url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E") repeat;
+        pointer-events: none;
+        z-index: 50;
+        animation: grain 0.5s steps(1) infinite;
+        opacity: 0.3;
+    }
+
+    /* Subtle animated gradient for hero */
+    .hero-gradient {
+        background: linear-gradient(135deg,
+                rgba(139, 92, 246, 0.05) 0%,
+                rgba(10, 10, 10, 1) 30%,
+                rgba(10, 10, 10, 1) 70%,
+                rgba(139, 92, 246, 0.03) 100%);
+        background-size: 200% 200%;
+        animation: gradient 8s ease infinite;
+    }
+
+    /* Link hover underline animation */
+    .nav-link {
+        @apply relative text-vant-light/80 hover:text-vant-light transition-colors duration-300;
+    }
+
+    .nav-link::after {
+        content: '';
+        @apply absolute left-0 bottom-0 w-0 h-[1px] bg-vant-purple transition-all duration-300;
+    }
+
+    .nav-link:hover::after {
+        @apply w-full;
+    }
+
+    /* Button styles */
+    .btn-primary {
+        @apply inline-flex items-center justify-center px-8 py-3.5 bg-vant-purple text-white font-heading text-sm uppercase tracking-[0.15em] hover:bg-vant-purple-dark transition-all duration-300 hover:scale-[1.02] active:scale-[0.98];
+    }
+
+    .btn-secondary {
+        @apply inline-flex items-center justify-center px-8 py-3.5 border border-vant-light/20 text-vant-light font-heading text-sm uppercase tracking-[0.15em] hover:border-vant-purple hover:text-vant-purple transition-all duration-300;
+    }
+
+    .btn-outline {
+        @apply inline-flex items-center justify-center px-6 py-2.5 border border-vant-muted text-vant-muted font-body text-xs uppercase tracking-[0.1em] hover:border-vant-purple hover:text-vant-purple transition-all duration-300;
+    }
+
+    /* Container */
+    .container-vant {
+        @apply w-full max-w-7xl mx-auto px-5 md:px-8 lg:px-12;
+    }
+
+    /* Product card hover effect */
+    .product-card {
+        @apply relative overflow-hidden;
+    }
+
+    .product-card .product-image {
+        @apply transition-transform duration-700 ease-out;
+    }
+
+    .product-card:hover .product-image {
+        transform: scale(1.05);
+    }
+
+    /* Input styles */
+    .input-vant {
+        @apply w-full bg-transparent border border-vant-light/10 px-4 py-3 text-vant-light text-sm font-body placeholder:text-vant-muted/50 focus:outline-none focus:border-vant-purple transition-colors duration-300;
+    }
+
+    /* Divider */
+    .divider {
+        @apply w-full h-px bg-vant-light/5;
+    }
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
+}
