@@ -1,23 +1,44 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '@/lib/i18n';
-import { products } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
 import FadeIn from '@/components/FadeIn';
+import type { Product } from '@/data/products';
 
 type CategoryFilter = 'all' | 'tshirt' | 'hoodie';
 type SortOrder = 'default' | 'low-to-high' | 'high-to-low';
 
 export default function DropPage() {
     const { lang, t } = useLanguage();
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState<CategoryFilter>('all');
     const [sort, setSort] = useState<SortOrder>('default');
+
+    // Fetch products from Supabase
+    useEffect(() => {
+        let cancelled = false;
+        async function fetchProducts() {
+            try {
+                const { getAllProducts } = await import('@/lib/supabaseProducts');
+                const data = await getAllProducts();
+                if (!cancelled) {
+                    setProducts(data);
+                    setLoading(false);
+                }
+            } catch {
+                if (!cancelled) setLoading(false);
+            }
+        }
+        fetchProducts();
+        return () => { cancelled = true; };
+    }, []);
 
     const filtered = useMemo(() => {
         let result = [...products];
         if (category !== 'all') {
-            result = result.filter((p) => p.category === category);
+            result = result.filter((p) => p.categorySlug === category);
         }
         if (sort === 'low-to-high') {
             result.sort((a, b) => a.price - b.price);
@@ -25,7 +46,7 @@ export default function DropPage() {
             result.sort((a, b) => b.price - a.price);
         }
         return result;
-    }, [category, sort]);
+    }, [products, category, sort]);
 
     const categories: { value: CategoryFilter; label: string }[] = [
         { value: 'all', label: t.drop.all[lang] },
@@ -57,8 +78,8 @@ export default function DropPage() {
                                 key={cat.value}
                                 onClick={() => setCategory(cat.value)}
                                 className={`font-heading text-xs uppercase tracking-[0.15em] transition-colors duration-300 pb-1 border-b ${category === cat.value
-                                        ? 'text-vant-light border-vant-purple'
-                                        : 'text-vant-muted border-transparent hover:text-vant-light'
+                                    ? 'text-vant-light border-vant-purple'
+                                    : 'text-vant-muted border-transparent hover:text-vant-light'
                                     }`}
                             >
                                 {cat.label}
@@ -79,18 +100,27 @@ export default function DropPage() {
                 </div>
             </FadeIn>
 
-            {/* Product grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                {filtered.map((product, i) => (
-                    <FadeIn key={product.id} delay={i * 0.05}>
-                        <ProductCard product={product} />
-                    </FadeIn>
-                ))}
-            </div>
+            {/* Loading */}
+            {loading && (
+                <p className="text-center text-vant-muted font-body py-12 animate-pulse">
+                    {t.product.loading[lang]}
+                </p>
+            )}
 
-            {filtered.length === 0 && (
+            {/* Product grid */}
+            {!loading && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                    {filtered.map((product, i) => (
+                        <FadeIn key={product.id} delay={i * 0.05}>
+                            <ProductCard product={product} />
+                        </FadeIn>
+                    ))}
+                </div>
+            )}
+
+            {!loading && filtered.length === 0 && (
                 <p className="text-center text-vant-muted mt-12 font-body">
-                    {lang === 'tr' ? 'Ürün bulunamadı.' : 'No products found.'}
+                    {t.product.noProducts[lang]}
                 </p>
             )}
         </section>

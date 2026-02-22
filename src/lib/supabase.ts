@@ -1,0 +1,55 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+
+/* ------------------------------------------------------------------ */
+/*  Server-side client (anon key — safe for SSR / route handlers)     */
+/* ------------------------------------------------------------------ */
+export function createServerSupabaseClient(): SupabaseClient | null {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!url || !anonKey) {
+        console.warn('[supabase] URL or Anon Key missing — check env vars.');
+        return null;
+    }
+
+    return createClient(url, anonKey);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Server-side admin client (service role — NEVER expose to client)  */
+/* ------------------------------------------------------------------ */
+export function createServiceRoleClient(): SupabaseClient | null {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!url || !serviceKey) {
+        console.warn('[supabase] URL or Service Role Key missing — check env vars.');
+        return null;
+    }
+
+    return createClient(url, serviceKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Browser-side client (anon key — for cart, auth OTP on client)     */
+/* ------------------------------------------------------------------ */
+let browserClient: SupabaseClient | null = null;
+
+export function createBrowserSupabaseClient(): SupabaseClient | null {
+    if (typeof window === 'undefined') return null;
+
+    if (browserClient) return browserClient;
+
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!url || !anonKey) {
+        console.warn('[supabase] URL or Anon Key missing — check env vars.');
+        return null;
+    }
+
+    browserClient = createClient(url, anonKey);
+    return browserClient;
+}

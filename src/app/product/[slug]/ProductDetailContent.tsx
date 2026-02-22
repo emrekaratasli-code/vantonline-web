@@ -4,30 +4,67 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/i18n';
-import { getProductBySlug } from '@/data/products';
+import { useCart } from '@/lib/CartContext';
 import { viewContent, initiateCheckout } from '@/lib/pixel';
 import ImageGallery from '@/components/ImageGallery';
 import SizeSelector from '@/components/SizeSelector';
 import FadeIn from '@/components/FadeIn';
+import type { Product } from '@/data/products';
 
 export default function ProductDetailContent() {
     const params = useParams();
     const slug = params.slug as string;
-    const product = getProductBySlug(slug);
     const { lang, t } = useLanguage();
-    const [selectedSize, setSelectedSize] = useState('');
+    const { addToCart } = useCart();
 
+    const [product, setProduct] = useState<Product | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [selectedSize, setSelectedSize] = useState('');
+    const [sizeWarning, setSizeWarning] = useState(false);
+    const [selectedColor, setSelectedColor] = useState('');
+    const [colorWarning, setColorWarning] = useState(false);
+    const [addedFeedback, setAddedFeedback] = useState(false);
+
+    // Fetch product from Supabase via an inline fetch
+    useEffect(() => {
+        let cancelled = false;
+        async function fetchProduct() {
+            try {
+                // Use the supabaseProducts module dynamically
+                const { getProductBySlug } = await import('@/lib/supabaseProducts');
+                const p = await getProductBySlug(slug);
+                if (!cancelled) {
+                    setProduct(p);
+                    setLoading(false);
+                }
+            } catch {
+                if (!cancelled) setLoading(false);
+            }
+        }
+        fetchProduct();
+        return () => { cancelled = true; };
+    }, [slug]);
+
+    // Track view
     useEffect(() => {
         if (product) {
             viewContent({
                 content_name: product.name,
                 content_ids: [product.id],
                 content_type: 'product',
-                value: product.price,
+                value: product.price / 100,
                 currency: 'TRY',
             });
         }
     }, [product]);
+
+    if (loading) {
+        return (
+            <div className="container-vant py-20 text-center">
+                <p className="text-vant-muted font-body animate-pulse">{t.product.loading[lang]}</p>
+            </div>
+        );
+    }
 
     if (!product) {
         return (
@@ -42,15 +79,52 @@ export default function ProductDetailContent() {
         );
     }
 
-    const handleBuyClick = () => {
+    /** Format kuruş → TRY */
+    const displayPrice = `${t.product.currency[lang]}${(product.price / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
+
+    const colorOptions = product.color
+        ? product.color.split(',').map((c) => c.trim()).filter(Boolean)
+        : [];
+
+    const handleAddToCart = () => {
+        const hasSizes = product.sizes && product.sizes.length > 0;
+        const hasColors = colorOptions.length > 1;
+
+        let valid = true;
+
+        if (hasSizes && !selectedSize) {
+            setSizeWarning(true);
+            valid = false;
+        } else {
+            setSizeWarning(false);
+        }
+
+        if (hasColors && !selectedColor) {
+            setColorWarning(true);
+            valid = false;
+        } else {
+            setColorWarning(false);
+        }
+
+        if (!valid) return;
+
+        const cartSize = hasSizes ? selectedSize : 'Standart';
+        const cartColor = hasColors ? selectedColor : (colorOptions[0] || 'Standart');
+
+        // Sepete ekle
+        addToCart(product, cartSize, cartColor, 1);
+
         initiateCheckout({
             content_name: product.name,
             content_ids: [product.id],
             content_type: 'product',
-            value: product.price,
+            value: product.price / 100,
             currency: 'TRY',
             num_items: 1,
         });
+
+        setAddedFeedback(true);
+        setTimeout(() => setAddedFeedback(false), 2500);
     };
 
     return (
@@ -65,12 +139,12 @@ export default function ProductDetailContent() {
                         name: product.name,
                         description: product.description.tr,
                         image: product.images.map((img) => `https://vant.com.tr${img}`),
-                        brand: { '@type': 'Brand', name: 'VANT' },
+                        brand: { '@type': 'Brand', name: 'VANT Art' },
                         offers: {
                             '@type': 'Offer',
-                            url: product.shopierUrl,
+                            url: `https://vant.com.tr/product/${product.slug}`,
                             priceCurrency: 'TRY',
-                            price: product.price,
+                            price: (product.price / 100).toFixed(2),
                             availability: product.isOutOfStock
                                 ? 'https://schema.org/OutOfStock'
                                 : 'https://schema.org/InStock',
@@ -104,7 +178,7 @@ export default function ProductDetailContent() {
                                     {product.name}
                                 </h1>
                                 <p className="mt-2 font-heading text-2xl text-vant-light/90">
-                                    {t.product.currency[lang]}{product.price}
+                                    {displayPrice}
                                 </p>
                             </div>
 
@@ -114,28 +188,62 @@ export default function ProductDetailContent() {
                                 {t.product.limitedEdition[lang]}
                             </div>
 
-                            {/* Color */}
-                            <div>
-                                <span className="text-xs font-heading uppercase tracking-wider text-vant-muted">
-                                    {t.product.color[lang]}:
-                                </span>
-                                <span className="ml-2 text-sm text-vant-light">{product.color}</span>
-                            </div>
+                            {/* Color Selector */}
+                            {colorOptions.length > 1 ? (
+                                <div>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-xs font-heading uppercase tracking-wider text-vant-muted">
+                                            {t.product.color[lang]}
+                                        </h3>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {colorOptions.map((c) => (
+                                            <button
+                                                key={c}
+                                                onClick={() => { setSelectedColor(c); setColorWarning(false); }}
+                                                className={`px-4 py-2 border text-sm font-heading uppercase tracking-wider transition-all duration-300 ${selectedColor === c
+                                                    ? 'border-vant-purple text-vant-purple bg-vant-purple/10'
+                                                    : 'border-vant-light/10 text-vant-light hover:border-vant-light/30'
+                                                    }`}
+                                            >
+                                                {c}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {colorWarning && (
+                                        <p className="mt-2 text-xs text-red-500 font-heading uppercase tracking-wider">
+                                            {lang === 'tr' ? 'Lütfen bir renk seçin' : 'Please select a color'}
+                                        </p>
+                                    )}
+                                </div>
+                            ) : colorOptions.length === 1 ? (
+                                <div>
+                                    <span className="text-xs font-heading uppercase tracking-wider text-vant-muted">
+                                        {t.product.color[lang]}:
+                                    </span>
+                                    <span className="ml-2 text-sm text-vant-light">{colorOptions[0]}</span>
+                                </div>
+                            ) : null}
 
                             {/* Size selector */}
-                            <div>
-                                <label className="block text-xs font-heading uppercase tracking-wider text-vant-muted mb-3">
-                                    {t.product.size[lang]}
-                                </label>
-                                <SizeSelector
-                                    sizes={product.sizes}
-                                    selectedSize={selectedSize}
-                                    onSelect={setSelectedSize}
-                                />
-                                {!selectedSize && (
-                                    <p className="mt-2 text-xs text-vant-muted/60">{t.product.selectSize[lang]}</p>
-                                )}
-                            </div>
+                            {product.sizes && product.sizes.length > 0 && (
+                                <div>
+                                    <label className="block text-xs font-heading uppercase tracking-wider text-vant-muted mb-3">
+                                        {t.product.size[lang]}
+                                    </label>
+                                    <SizeSelector
+                                        sizes={product.sizes}
+                                        selectedSize={selectedSize}
+                                        onSelect={(s) => { setSelectedSize(s); setSizeWarning(false); }}
+                                    />
+                                    {!selectedSize && !sizeWarning && (
+                                        <p className="mt-2 text-xs text-vant-muted/60">{t.product.selectSize[lang]}</p>
+                                    )}
+                                    {sizeWarning && (
+                                        <p className="mt-2 text-xs text-red-400">{t.product.selectSizeWarning[lang]}</p>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Actions */}
                             <div className="flex flex-col sm:flex-row gap-3 pt-2">
@@ -144,15 +252,12 @@ export default function ProductDetailContent() {
                                         {t.product.outOfStock[lang]}
                                     </span>
                                 ) : (
-                                    <a
-                                        href={product.shopierUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        onClick={handleBuyClick}
+                                    <button
+                                        onClick={handleAddToCart}
                                         className="btn-primary"
                                     >
-                                        {t.product.buyOnShopier[lang]}
-                                    </a>
+                                        {addedFeedback ? t.product.addedToCart[lang] : t.product.addToCart[lang]}
+                                    </button>
                                 )}
                                 <Link href="/drop" className="btn-secondary">
                                     {t.product.backToDrop[lang]}

@@ -15,12 +15,12 @@ export default function Footer() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8">
                     {/* Brand */}
                     <div className="md:col-span-1">
-                        <Link href="/" className="block w-24 mb-4 hover:opacity-80 transition-opacity">
+                        <Link href="/" className="block w-32 mb-4 hover:opacity-80 transition-opacity">
                             <Image
                                 src="/images/logo-full.png"
-                                alt="VANT"
-                                width={100}
-                                height={33}
+                                alt="VANT Art"
+                                width={180}
+                                height={52}
                                 className="w-full h-auto object-contain"
                             />
                         </Link>
@@ -99,9 +99,7 @@ export default function Footer() {
 
                 {/* Bottom bar */}
                 <div className="mt-16 pt-8 border-t border-vant-light/5 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <p className="text-xs text-vant-muted/60">
-                        © {currentYear} VANT. {t.footer.rights[lang]}
-                    </p>
+                    © {currentYear} VANT Art. {t.footer.rights[lang]}
                     <p className="text-xs text-vant-muted/40 font-heading tracking-widest uppercase">
                         Purple Slash
                     </p>

@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState } from 'react';
 import { useLanguage } from '@/lib/i18n';
+import { useCart } from '@/lib/CartContext';
 import { initiateCheckout } from '@/lib/pixel';
 import type { Product } from '@/data/products';
 
@@ -12,28 +14,42 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
     const { lang, t } = useLanguage();
+    const { addToCart } = useCart();
+    const [added, setAdded] = useState(false);
 
-    const handleBuyClick = () => {
+    const handleAddToCart = () => {
+        // Quick-add with first available size/color
+        const defaultSize = product.sizes && product.sizes.length > 0 ? product.sizes[0] : 'Standart';
+        const rawColors = product.color ? product.color.split(',').map(c => c.trim()).filter(Boolean) : [];
+        const defaultColor = rawColors.length > 0 ? rawColors[0] : 'Standart';
+
+        addToCart(product, defaultSize, defaultColor, 1);
         initiateCheckout({
             content_name: product.name,
             content_ids: [product.id],
             content_type: 'product',
-            value: product.price,
+            value: product.price / 100,
             currency: 'TRY',
             num_items: 1,
         });
+        setAdded(true);
+        setTimeout(() => setAdded(false), 2000);
     };
+
+    /** Format kuruş → TRY display */
+    const displayPrice = `${t.product.currency[lang]}${(product.price / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
 
     return (
         <div className="product-card">
             {/* Image */}
             <Link href={`/product/${product.slug}`} className="block relative aspect-[3/4] bg-vant-gray overflow-hidden">
                 <Image
-                    src={product.images[0]}
+                    src={product.images[0] || '/images/placeholder-product.svg'}
                     alt={product.name}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                     className="product-image object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/images/placeholder-product.svg'; }}
                 />
                 {product.isOutOfStock && (
                     <div className="absolute top-3 left-3 px-3 py-1 bg-vant-black/80 text-xs font-heading uppercase tracking-wider text-vant-muted">
@@ -49,7 +65,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                         {product.name}
                     </h3>
                     <span className="font-body text-sm text-vant-muted whitespace-nowrap">
-                        {t.product.currency[lang]}{product.price}
+                        {displayPrice}
                     </span>
                 </div>
 
@@ -67,15 +83,12 @@ export default function ProductCard({ product }: ProductCardProps) {
                             {t.product.outOfStock[lang]}
                         </span>
                     ) : (
-                        <a
-                            href={product.shopierUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={handleBuyClick}
+                        <button
+                            onClick={handleAddToCart}
                             className="text-xs font-heading uppercase tracking-wider text-vant-purple hover:text-vant-purple-light transition-colors duration-300"
                         >
-                            {t.product.buyOnShopier[lang]}
-                        </a>
+                            {added ? t.product.addedToCart[lang] : t.product.addToCart[lang]}
+                        </button>
                     )}
                 </div>
             </div>

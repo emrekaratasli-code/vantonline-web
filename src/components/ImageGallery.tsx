@@ -16,12 +16,13 @@ export default function ImageGallery({ images, alt }: ImageGalleryProps) {
             {/* Main image */}
             <div className="relative aspect-[3/4] bg-vant-gray overflow-hidden">
                 <Image
-                    src={images[activeIndex]}
+                    src={images[activeIndex] || '/images/placeholder-product.svg'}
                     alt={`${alt} - ${activeIndex + 1}`}
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                     priority
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/images/placeholder-product.svg'; }}
                 />
             </div>
 
@@ -35,11 +36,12 @@ export default function ImageGallery({ images, alt }: ImageGalleryProps) {
                             }`}
                     >
                         <Image
-                            src={img}
+                            src={img || '/images/placeholder-product.svg'}
                             alt={`${alt} thumbnail ${i + 1}`}
                             fill
                             sizes="(max-width: 768px) 33vw, 15vw"
                             className="object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).src = '/images/placeholder-product.svg'; }}
                         />
                     </button>
                 ))}

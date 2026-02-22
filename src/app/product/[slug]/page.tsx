@@ -1,11 +1,6 @@
-import { products } from '@/data/products';
 import ProductDetailContent from './ProductDetailContent';
 
-export function generateStaticParams() {
-    return products.map((product) => ({
-        slug: product.slug,
-    }));
-}
+export const dynamic = 'force-dynamic';
 
 export default function ProductPage() {
     return <ProductDetailContent />;

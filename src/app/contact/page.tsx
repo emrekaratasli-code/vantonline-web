@@ -35,10 +35,10 @@ export default function ContactPage() {
                             {lang === 'tr' ? 'veya doğrudan e-posta gönderin:' : 'or send an email directly:'}
                         </p>
                         <a
-                            href="mailto:info@vant.com.tr"
+                            href="mailto:iletisim@vantonline.com"
                             className="mt-2 inline-block text-sm text-vant-purple hover:text-vant-purple-light transition-colors"
                         >
-                            info@vant.com.tr
+                            iletisim@vantonline.com
                         </a>
                     </div>
                 </div>
