@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 
 type Lang = 'tr' | 'en';
 
@@ -232,7 +232,6 @@ const translations = {
         links: { tr: 'Bağlantılar', en: 'Links' },
         legal: { tr: 'Yasal', en: 'Legal' },
         social: { tr: 'Sosyal', en: 'Social' },
-        accessories: { tr: 'Aksesuarlar — Çok Yakında', en: 'Accessories — Coming Soon' },
     },
 } as const;
 
@@ -251,10 +250,34 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-    const [lang, setLang] = useState<Lang>('tr');
+    const [lang, setLangState] = useState<Lang>('tr');
+    const [mounted, setMounted] = useState(false);
 
+    // Hydrate from localStorage after first mount (avoids SSR mismatch)
+    useEffect(() => {
+        try {
+            const stored = localStorage.getItem('vant-lang') as Lang | null;
+            if (stored === 'tr' || stored === 'en') {
+                setLangState(stored);
+            }
+        } catch {
+            // localStorage not available (private mode etc.)
+        }
+        setMounted(true);
+    }, []);
+
+    const setLang = useCallback((newLang: Lang) => {
+        setLangState(newLang);
+        try {
+            localStorage.setItem('vant-lang', newLang);
+        } catch {
+            // ignore
+        }
+    }, []);
+
+    // Render with default 'tr' until mounted to avoid hydration mismatch
     return (
-        <LanguageContext.Provider value={{ lang, setLang, t: translations }}>
+        <LanguageContext.Provider value={{ lang: mounted ? lang : 'tr', setLang, t: translations }}>
             {children}
         </LanguageContext.Provider>
     );
