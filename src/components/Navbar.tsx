@@ -6,8 +6,10 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 import LanguageToggle from './LanguageToggle';
-import ThemeToggle from './ThemeToggle';
 import CartIcon from './CartIcon';
+import dynamic from 'next/dynamic';
+
+const ThemeToggle = dynamic(() => import('./ThemeToggle'), { ssr: false });
 
 export default function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
