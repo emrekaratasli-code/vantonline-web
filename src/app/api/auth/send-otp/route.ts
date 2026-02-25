@@ -59,11 +59,11 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Trigger Supabase Phone OTP via WhatsApp
+        // Trigger Supabase Phone OTP via SMS (Twilio)
         const { error } = await supabase.auth.signInWithOtp({
             phone,
             options: {
-                channel: 'whatsapp',
+                channel: 'sms',
             }
         });
 
