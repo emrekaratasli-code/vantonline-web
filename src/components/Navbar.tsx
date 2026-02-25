@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 import LanguageToggle from './LanguageToggle';
+import ThemeToggle from './ThemeToggle';
 import CartIcon from './CartIcon';
 
 export default function Navbar() {
@@ -20,8 +21,13 @@ export default function Navbar() {
     ];
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-40 bg-vant-black/80 backdrop-blur-md border-b border-vant-light/5 transition-all duration-300">
-            <nav className="container-vant flex items-center justify-between h-20 md:h-24">
+        <header className="fixed top-0 left-0 right-0 z-40 transition-colors duration-300 border-b"
+            style={{
+                backgroundColor: 'var(--navbar-bg)',
+                borderColor: 'var(--navbar-border)',
+            }}
+        >
+            <nav className="container-vant flex items-center justify-between h-24 md:h-28">
                 {/* Logo */}
                 <Link
                     href="/"
@@ -30,9 +36,9 @@ export default function Navbar() {
                     <Image
                         src="/images/logo-full.png"
                         alt="VANT Art"
-                        width={300}
-                        height={80}
-                        className="h-14 md:h-20 w-auto object-contain scale-110 origin-left"
+                        width={400}
+                        height={110}
+                        className="h-20 md:h-28 w-auto object-contain scale-110 origin-left"
                         priority
                     />
                 </Link>
@@ -60,6 +66,7 @@ export default function Navbar() {
                     </button>
 
                     <CartIcon />
+                    <ThemeToggle />
                     <LanguageToggle />
 
                     {/* Mobile hamburger */}

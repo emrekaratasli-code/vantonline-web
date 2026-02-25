@@ -41,6 +41,7 @@ export default function ImageGallery({ images, alt }: ImageGalleryProps) {
                             fill
                             sizes="(max-width: 768px) 33vw, 15vw"
                             className="object-cover"
+                            loading="lazy"
                             onError={(e) => { (e.target as HTMLImageElement).src = '/images/placeholder-product.svg'; }}
                         />
                     </button>

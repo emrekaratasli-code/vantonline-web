@@ -49,6 +49,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                     className="product-image object-cover"
+                    loading="lazy"
                     onError={(e) => { (e.target as HTMLImageElement).src = '/images/placeholder-product.svg'; }}
                 />
                 {product.isOutOfStock && (

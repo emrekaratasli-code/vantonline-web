@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import './globals.css';
 import ClientLayout from '@/components/ClientLayout';
 
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.vantonline.com';
+
 export const metadata: Metadata = {
-    metadataBase: new URL('https://www.vantonline.com'),
+    metadataBase: new URL(baseUrl),
     alternates: {
-        canonical: 'https://www.vantonline.com',
+        canonical: baseUrl,
     },
     title: {
         default: 'VANT Art',
@@ -23,7 +25,7 @@ export const metadata: Metadata = {
         type: 'website',
         locale: 'tr_TR',
         alternateLocale: 'en_US',
-        url: 'https://www.vantonline.com',
+        url: baseUrl,
         siteName: 'VANT',
         title: 'VANT — Wearable Art / Streetwear',
         description: 'Purple Slash koleksiyonu. Sınırlı üretim, cesur tasarım. Türkiye geneli ücretsiz kargo.',

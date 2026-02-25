@@ -77,7 +77,28 @@ export default function HomePage() {
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[2px] bg-vant-purple z-10" />
             </section>
 
+            {/* TRUST STRIP */}
+            <section className="border-y border-vant-light/5 bg-vant-dark/60">
+                <div className="container-vant py-5">
+                    <dl className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-center">
+                        {[
+                            { icon: '🚚', tr: 'Ücretsiz Kargo', en: 'Free Shipping' },
+                            { icon: '⏱', tr: '1–3 İş Günü Kargoda', en: 'Ships 1–3 Business Days' },
+                            { icon: '🔄', tr: '14 Gün İade', en: '14-Day Returns' },
+                        ].map((item) => (
+                            <div key={item.tr} className="flex items-center gap-2">
+                                <span className="text-base" role="img" aria-hidden="true">{item.icon}</span>
+                                <dt className="font-heading text-xs uppercase tracking-[0.1em] text-vant-light/80">
+                                    {lang === 'tr' ? item.tr : item.en}
+                                </dt>
+                            </div>
+                        ))}
+                    </dl>
+                </div>
+            </section>
+
             {/* FEATURED PRODUCTS */}
+
             <section className="container-vant py-20 md:py-28">
                 <FadeIn>
                     <h2 className="font-heading text-display font-bold uppercase tracking-tight text-center">

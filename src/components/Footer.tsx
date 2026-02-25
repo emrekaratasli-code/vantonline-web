@@ -22,6 +22,7 @@ export default function Footer() {
                                 width={180}
                                 height={52}
                                 className="w-full h-auto object-contain"
+                                loading="lazy"
                             />
                         </Link>
                         <p className="mt-3 text-sm text-vant-muted font-body leading-relaxed">
@@ -50,7 +51,10 @@ export default function Footer() {
                         <ul className="space-y-3">
                             <li><Link href="/shipping-returns" className="text-sm text-vant-muted hover:text-vant-purple transition-colors">{t.nav.shipping[lang]}</Link></li>
                             <li><Link href="/contact" className="text-sm text-vant-muted hover:text-vant-purple transition-colors">{t.nav.contact[lang]}</Link></li>
-                            <li><span className="text-sm text-vant-muted/40">{t.footer.accessories[lang]}</span></li>
+                            <li><Link href="/privacy" className="text-sm text-vant-muted hover:text-vant-purple transition-colors">{lang === 'tr' ? 'Gizlilik' : 'Privacy'}</Link></li>
+                            <li><Link href="/kvkk" className="text-sm text-vant-muted hover:text-vant-purple transition-colors">KVKK</Link></li>
+                            <li><Link href="/terms" className="text-sm text-vant-muted hover:text-vant-purple transition-colors">{lang === 'tr' ? 'Kullanım Koşulları' : 'Terms'}</Link></li>
+                            <li><Link href="/distance-sales" className="text-sm text-vant-muted hover:text-vant-purple transition-colors">{lang === 'tr' ? 'Mesafeli Satış' : 'Distance Sales'}</Link></li>
                         </ul>
                     </div>
 
@@ -61,7 +65,7 @@ export default function Footer() {
                         </h4>
                         <div className="flex gap-4">
                             <a
-                                href="https://instagram.com/vant"
+                                href="https://www.instagram.com/vantartonline?utm_source=qr"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-vant-muted hover:text-vant-purple transition-colors"
@@ -72,18 +76,7 @@ export default function Footer() {
                                 </svg>
                             </a>
                             <a
-                                href="https://twitter.com/vant"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-vant-muted hover:text-vant-purple transition-colors"
-                                aria-label="X / Twitter"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M4 4l11.733 16h4.267l-11.733-16z" /><path d="M4 20l6.768-6.768" /><path d="M20 4l-6.768 6.768" />
-                                </svg>
-                            </a>
-                            <a
-                                href="https://tiktok.com/@vant"
+                                href="https://www.tiktok.com/@vant.taki.aksesuar?_r=1&_t=ZS-948plUHKRmB"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-vant-muted hover:text-vant-purple transition-colors"
