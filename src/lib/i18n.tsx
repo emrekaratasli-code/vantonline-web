@@ -14,6 +14,21 @@ const translations = {
         shipping: { tr: 'Kargo & İade', en: 'Shipping & Returns' },
         search: { tr: 'Ara', en: 'Search' },
     },
+    homeNeo: {
+        heroHeadline: { tr: 'Otoriteye karşı sorunlarımız var.', en: 'We have issues with authority.' },
+        heroSubtext: {
+            tr: 'Dayatılan standartları boşver, biz o kuralları çoktan yıktık.',
+            en: 'Forget the imposed standards, we\'ve already broken those rules.',
+        },
+        heroCta: { tr: "Drop'u Yakala", en: 'Catch the Drop' },
+        heroSecondary: { tr: 'Stili Gör', en: 'See the Looks' },
+        manifestoTitle: { tr: 'Sokak Protokolü', en: 'Street Protocol' },
+        manifestoText: {
+            tr: 'Biz düzene uyum satmıyoruz. Her parça sokakta test edilir: dayanıklı, net ve tekrar edilmez. Az üretiriz çünkü değer, herkeste olan değildir.',
+            en: 'We do not sell compliance. Every piece is tested by the street: durable, sharp, and non-repeatable. We produce less because value is never mass.',
+        },
+        newsletterTitle: { tr: 'Sıradaki drop düşmeden haberi al.', en: 'Get the signal before the next drop lands.' },
+    },
     hero: {
         headline: { tr: 'VANT Art — Hatırlanmak için.', en: 'VANT Art — Made to be remembered.' },
         subtext: {
@@ -141,13 +156,21 @@ const translations = {
     },
     about: {
         title: { tr: 'Hakkımızda', en: 'About Us' },
+        corporateIntro: {
+            tr: 'VANT Art, 2026 yılında Türkiye\'nin sokaklarında doğdu. Modern tasarımın vizyonunu, sokağın dinamik ruhuyla harmanlayarak falan filan...',
+            en: 'VANT Art was born on the streets of Turkey in 2026. Blending the vision of modern design with the dynamic spirit of the streets blah blah blah...',
+        },
         story: {
-            tr: 'VANT Art, 2024 yılında İstanbul\'un sokaklarında doğdu. Tek bir inançla: giyim sadece bir ihtiyaç değil, bir ifade biçimidir. Her parçamız sokak kültürünün cesaretini, minimal tasarımın zarafetini ve sınırlı üretimin değerini taşır.',
-            en: 'VANT Art was born on the streets of Istanbul in 2024. With a single belief: clothing is not just a necessity, but a form of expression. Every piece carries the courage of street culture, the elegance of minimal design, and the value of limited production.',
+            tr: 'Hayır, bu kurumsal masalları bir kenara bırakalım.',
+            en: 'No, let\'s put aside these corporate fairy tales.',
+        },
+        storyBody: {
+            tr: 'Bizim tek bir amacımız var: Standartları başkalaştırmak. Bize dayatılan o tek tip güzellik algılarıyla ciddi bir derdimiz var. Bu yüzden tasarımlarımızla sadece bir şeyler üretmek değil, bir şeyler anlatmak istiyoruz. Kendimizi. Sizi. Ve o içimizdeki asıl gerçeği.',
+            en: 'We have one single purpose: To transform the standards. We have a serious problem with the uniform beauty perceptions imposed on us. That\'s why we don\'t just want to produce things with our designs — we want to tell something. About ourselves. About you. And about the real truth inside us.',
         },
         manifesto: {
-            tr: 'Biz trend takip etmeyiz — biz başlatırız. Purple Slash sadece bir renk değil, bir duruştur. VANT Art giyen herkes sessiz bir isyanı taşır. Kuralları biz koymadık, ama onları kırmayı biz seçtik.',
-            en: 'We don\'t follow trends — we start them. Purple Slash is not just a color, it\'s a stance. Everyone who wears VANT Art carries a quiet rebellion. We didn\'t make the rules, but we chose to break them.',
+            tr: 'Kuralları biz koymadık, ama onları kırmayı biz seçtik.',
+            en: 'We didn\'t make the rules, but we chose to break them.',
         },
         values: {
             tr: ['Sınırlı Üretim', 'Sürdürülebilir Malzeme', 'Türk Tasarımı', 'Sokak Kültürü'],

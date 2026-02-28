@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { LanguageProvider } from '@/lib/i18n';
 import { CartProvider } from '@/lib/CartContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
@@ -8,14 +9,17 @@ import Footer from '@/components/Footer';
 import MetaPixel from '@/components/MetaPixel';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+    const variant = pathname === '/' ? 'home-neo-grunge' : 'default';
+
     return (
         <ThemeProvider>
             <LanguageProvider>
                 <CartProvider>
                     <MetaPixel />
-                    <Navbar />
+                    <Navbar variant={variant} />
                     <main className="min-h-screen pt-24 md:pt-28">{children}</main>
-                    <Footer />
+                    <Footer variant={variant} />
                 </CartProvider>
             </LanguageProvider>
         </ThemeProvider>

@@ -14,16 +14,24 @@ export default function AboutPage() {
                         {t.about.title[lang]}
                     </h1>
 
-                    <div className="mt-12 space-y-8">
-                        <p className="text-base md:text-lg text-vant-light/80 font-body leading-[1.8]">
+                    <div className="mt-12 space-y-10">
+                        <p className="text-base md:text-lg text-vant-muted/60 font-body leading-[1.8]">
+                            {t.about.corporateIntro[lang]}
+                        </p>
+
+                        {/* Bold dismissal */}
+                        <p className="text-xl md:text-2xl text-vant-light font-heading font-bold">
                             {t.about.story[lang]}
                         </p>
 
-                        <div className="w-8 h-[2px] bg-vant-purple" />
+                        <div className="w-12 h-[2px] bg-vant-purple" />
 
-                        <p className="text-base md:text-lg text-vant-muted font-body leading-[1.8] italic">
-                            &ldquo;{t.about.manifesto[lang]}&rdquo;
+                        {/* The real story */}
+                        <p className="text-base md:text-lg text-vant-light/90 font-body leading-[1.9]">
+                            {t.about.storyBody[lang]}
                         </p>
+
+
                     </div>
                 </div>
             </FadeIn>
@@ -46,3 +54,4 @@ export default function AboutPage() {
         </section>
     );
 }
+

@@ -34,7 +34,7 @@ export default function ContactForm() {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="w-full max-w-lg space-y-5" noValidate>
+        <form onSubmit={handleSubmit} className="w-full max-w-lg mx-auto space-y-5" noValidate>
             <div>
                 <input
                     type="text"
@@ -65,7 +65,7 @@ export default function ContactForm() {
                 />
                 {errors.message && <p className="mt-1 text-xs text-red-400">{errors.message}</p>}
             </div>
-            <button type="submit" className="btn-primary w-full sm:w-auto">
+            <button type="submit" className="btn-primary w-full">
                 {t.contact.send[lang]}
             </button>
             {submitted && (

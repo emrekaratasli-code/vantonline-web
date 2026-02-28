@@ -15,33 +15,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const [theme, setTheme] = useState<Theme>('dark');
     const [mounted, setMounted] = useState(false);
 
-    // Initialize theme from localStorage on mount
     useEffect(() => {
-        const saved = localStorage.getItem('theme') as Theme | null;
-        const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        const initialTheme = saved || systemPreference;
-        
-        setTheme(initialTheme);
-        applyTheme(initialTheme);
+        setTheme('dark');
+        applyTheme();
         setMounted(true);
     }, []);
 
     const toggleTheme = () => {
-        const newTheme = theme === 'dark' ? 'light' : 'dark';
-        setTheme(newTheme);
-        localStorage.setItem('theme', newTheme);
-        applyTheme(newTheme);
+        // Dark-only strategy: keep API shape but disable theme switching.
+        setTheme('dark');
+        applyTheme();
     };
 
-    const applyTheme = (t: Theme) => {
+    const applyTheme = () => {
         const html = document.documentElement;
-        if (t === 'dark') {
-            html.classList.remove('light-mode');
-            html.classList.add('dark-mode');
-        } else {
-            html.classList.remove('dark-mode');
-            html.classList.add('light-mode');
-        }
+        html.classList.remove('light-mode');
+        html.classList.add('dark-mode');
     };
 
     if (!mounted) return <>{children}</>;

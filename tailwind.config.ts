@@ -15,9 +15,11 @@ const config: Config = {
                     muted: '#888888',
                     light: '#F5F5F0',
                     white: '#FAFAFA',
-                    purple: '#8B5CF6',
-                    'purple-dark': '#7C3AED',
-                    'purple-light': '#A78BFA',
+                    purple: '#6C4596',
+                    'purple-dark': '#55357A',
+                    'purple-light': '#8D6FAF',
+                    accent: '#6C4596',
+                    'accent-dark': '#55357A',
                 },
             },
             fontFamily: {
@@ -25,7 +27,7 @@ const config: Config = {
                 body: ['Inter', 'sans-serif'],
             },
             fontSize: {
-                'hero': ['clamp(3rem, 8vw, 7rem)', { lineHeight: '0.95', letterSpacing: '-0.02em' }],
+                'hero': ['clamp(1.1rem, 1.8vw, 1.5rem)', { lineHeight: '1.5', letterSpacing: '0' }],
                 'display': ['clamp(2rem, 5vw, 4rem)', { lineHeight: '1.05', letterSpacing: '-0.01em' }],
                 'title': ['clamp(1.5rem, 3vw, 2.5rem)', { lineHeight: '1.1' }],
             },
