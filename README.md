@@ -1,5 +1,7 @@
 # VANT Streetwear — Setup & Deployment
 
+> Deployment note (2026-03-09): Automated smoke deploy triggered by Friday for Vantonline.com.
+
 ## Quick Start
 
 ```bash
