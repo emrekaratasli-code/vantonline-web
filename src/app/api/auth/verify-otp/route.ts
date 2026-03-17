@@ -47,6 +47,21 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Sistem hatası.' }, { status: 500 });
         }
 
+        // Dev bypass — accept 123456 in development without Twilio
+        if (process.env.NODE_ENV === 'development' && code === '123456') {
+            console.log(`[verify-otp] DEV MODE — accepting test code for ${phone}`);
+
+            // Still upsert customer data in dev mode
+            const serviceClient = createServiceRoleClient();
+            if (serviceClient) {
+                await serviceClient
+                    .from('customers')
+                    .upsert({ phone, verified: true }, { onConflict: 'phone' });
+            }
+
+            return NextResponse.json({ ok: true, dev: true });
+        }
+
         // Verify OTP
         const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
             phone,

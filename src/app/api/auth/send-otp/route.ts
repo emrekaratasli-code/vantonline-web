@@ -59,6 +59,12 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Dev bypass — skip real SMS in development for testing
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`[send-otp] DEV MODE — skipping real SMS for ${phone}. Use code: 123456`);
+            return NextResponse.json({ ok: true, dev: true });
+        }
+
         // Trigger Supabase Phone OTP via SMS (Twilio)
         const { error } = await supabase.auth.signInWithOtp({
             phone,

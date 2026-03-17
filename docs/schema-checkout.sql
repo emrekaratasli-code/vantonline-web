@@ -46,6 +46,10 @@ CREATE TABLE IF NOT EXISTS orders (
     status TEXT NOT NULL DEFAULT 'draft'
         CHECK (status IN ('draft', 'pending', 'paid', 'shipped', 'delivered', 'cancelled')),
     shipping_address JSONB,
+    payment_method TEXT DEFAULT 'cod'
+        CHECK (payment_method IN ('cod', 'bank_transfer', 'credit_card')),
+    payment_token TEXT,      -- iyzico checkout form token
+    payment_id TEXT,         -- iyzico payment ID (set after successful payment)
     total INTEGER NOT NULL DEFAULT 0, -- in kuruş (100 kuruş = 1 TRY)
     currency TEXT NOT NULL DEFAULT 'TRY',
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -62,7 +66,9 @@ CREATE TABLE IF NOT EXISTS order_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     product_id UUID REFERENCES products(id),
+    product_name TEXT,
     size TEXT,
+    color TEXT,
     quantity INTEGER NOT NULL DEFAULT 1,
     unit_price INTEGER NOT NULL DEFAULT 0, -- price snapshot in kuruş
     created_at TIMESTAMPTZ DEFAULT NOW()
@@ -101,11 +107,13 @@ CREATE TABLE IF NOT EXISTS abandoned_carts (
 -- 7. TRIGGERS
 -- ============================================================
 -- Reuse update_updated_at_column() from schema.sql if already created
-CREATE TRIGGER IF NOT EXISTS update_customers_updated_at
+DROP TRIGGER IF EXISTS update_customers_updated_at ON customers;
+CREATE TRIGGER update_customers_updated_at
     BEFORE UPDATE ON customers
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER IF NOT EXISTS update_orders_updated_at
+DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
+CREATE TRIGGER update_orders_updated_at
     BEFORE UPDATE ON orders
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

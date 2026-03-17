@@ -108,6 +108,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                     color,
                     quantity,
                     image: product.images[0] ?? '',
+                    stockQuantity: product.stockQuantity,
                 };
                 return [...prev, newItem];
             });

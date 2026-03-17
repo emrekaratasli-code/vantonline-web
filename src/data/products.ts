@@ -24,6 +24,7 @@ export interface Product {
         tr: string[];
         en: string[];
     };
+    stockQuantity?: number;
 }
 
 export interface CartItem {
@@ -39,4 +40,5 @@ export interface CartItem {
     color?: string;
     quantity: number;
     image: string;
+    stockQuantity?: number;
 }

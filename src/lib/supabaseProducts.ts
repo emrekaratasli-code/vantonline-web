@@ -25,6 +25,7 @@ interface ProductRow {
     is_featured: boolean;
     care_instructions_tr: string[] | null;
     care_instructions_en: string[] | null;
+    stock_quantity?: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -87,6 +88,7 @@ function rowToProduct(row: ProductRow, catMap: Record<string, string>): Product 
             tr: row.care_instructions_tr ?? [],
             en: row.care_instructions_en ?? [],
         },
+        stockQuantity: row.stock_quantity ?? 0,
     };
 }
 

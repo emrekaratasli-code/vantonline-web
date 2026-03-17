@@ -15,7 +15,7 @@ export default function ProductDetailContent() {
     const params = useParams();
     const slug = params.slug as string;
     const { lang, t } = useLanguage();
-    const { addToCart } = useCart();
+    const { addToCart, cartItems } = useCart();
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
@@ -24,6 +24,7 @@ export default function ProductDetailContent() {
     const [selectedColor, setSelectedColor] = useState('');
     const [colorWarning, setColorWarning] = useState(false);
     const [addedFeedback, setAddedFeedback] = useState(false);
+    const [stockError, setStockError] = useState(false);
 
     // Fetch product from Supabase via an inline fetch
     useEffect(() => {
@@ -91,6 +92,7 @@ export default function ProductDetailContent() {
         const hasColors = colorOptions.length > 1;
 
         let valid = true;
+        setStockError(false);
 
         if (hasSizes && !selectedSize) {
             setSizeWarning(true);
@@ -110,6 +112,17 @@ export default function ProductDetailContent() {
 
         const cartSize = hasSizes ? selectedSize : 'Standart';
         const cartColor = hasColors ? selectedColor : (colorOptions[0] || 'Standart');
+
+        // Check stock
+        if (product.stockQuantity !== undefined) {
+            const existingItem = cartItems.find(i => i.productId === product.id && i.size === cartSize && i.color === cartColor);
+            const currentQty = existingItem ? existingItem.quantity : 0;
+            
+            if (currentQty >= product.stockQuantity) {
+                setStockError(true);
+                return;
+            }
+        }
 
         // Sepete ekle
         addToCart(product, cartSize, cartColor, 1);
@@ -182,8 +195,16 @@ export default function ProductDetailContent() {
                                 </p>
                             </div>
 
+                            {/* Stock warning limit badge */}
+                            {product.stockQuantity !== undefined && product.stockQuantity <= 5 && product.stockQuantity > 0 && (
+                                <div className="inline-flex mt-4 items-center gap-2 px-3 py-1.5 border border-red-500/30 bg-red-500/10 text-xs font-heading uppercase tracking-wider text-red-400">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse flex-shrink-0" />
+                                    {lang === 'tr' ? `Acele Et! Son ${product.stockQuantity} ürün` : `Hurry! Only ${product.stockQuantity} left`}
+                                </div>
+                            )}
+
                             {/* Limited edition badge */}
-                            <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-vant-purple/30 text-xs font-heading uppercase tracking-wider text-vant-purple">
+                            <div className="inline-flex mt-4 items-center gap-2 px-3 py-1.5 border border-vant-purple/30 text-xs font-heading uppercase tracking-wider text-vant-purple">
                                 <span className="w-1.5 h-1.5 bg-vant-purple rounded-full" />
                                 {t.product.limitedEdition[lang]}
                             </div>
@@ -263,6 +284,12 @@ export default function ProductDetailContent() {
                                     {t.product.backToDrop[lang]}
                                 </Link>
                             </div>
+
+                            {stockError && (
+                                <p className="text-xs text-red-400 font-heading uppercase tracking-wider mt-2">
+                                    {lang === 'tr' ? 'Üzgünüz, stok limiti aşıldı.' : 'Sorry, stock limit reached.'}
+                                </p>
+                            )}
 
                             {/* Divider */}
                             <div className="divider" />

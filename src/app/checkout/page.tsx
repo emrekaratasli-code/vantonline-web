@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { useLanguage } from '@/lib/i18n';
 import { useCart } from '@/lib/CartContext';
+import { createShopifyCheckout } from '@/lib/shopify';
 import FadeIn from '@/components/FadeIn';
 
 /* ------------------------------------------------------------------ */
@@ -25,6 +28,8 @@ interface ConsentData {
     marketingSms: boolean;
     marketingEmail: boolean;
 }
+
+type PaymentMethod = 'bank_transfer' | 'credit_card';
 
 type Step = 'shipping' | 'otp' | 'consent' | 'payment';
 
@@ -58,6 +63,7 @@ function isValidEmail(email: string): boolean {
 export default function CheckoutPage() {
     const { lang, t } = useLanguage();
     const { cartItems, cartTotal } = useCart();
+    const router = useRouter();
 
     const [currentStep, setCurrentStep] = useState<Step>('shipping');
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -77,6 +83,12 @@ export default function CheckoutPage() {
 
     // Consent
     const [consent, setConsent] = useState<ConsentData>({ marketingSms: false, marketingEmail: false });
+
+    // Payment
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('credit_card');
+    const [agreementAccepted, setAgreementAccepted] = useState(false);
+    const [orderLoading, setOrderLoading] = useState(false);
+    const [orderError, setOrderError] = useState('');
 
     /** Format kuruş → TRY */
     const formatPrice = (kuruş: number) =>
@@ -168,6 +180,66 @@ export default function CheckoutPage() {
     function goBack() {
         const prevIdx = stepIndex - 1;
         if (prevIdx >= 0) setCurrentStep(STEPS[prevIdx]);
+    }
+
+    /* ------- place order ------- */
+    async function handlePlaceOrder() {
+        if (!agreementAccepted) return;
+        setOrderLoading(true);
+        setOrderError('');
+        try {
+            // Step 1: Create order in Supabase
+            const orderRes = await fetch('/api/orders/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    shipping,
+                    cartItems: cartItems.map(item => ({
+                        productId: item.productId,
+                        name: item.name,
+                        size: item.size,
+                        color: item.color,
+                        quantity: item.quantity,
+                        price: item.price,
+                    })),
+                    cartTotal,
+                    customerPhone: toE164(shipping.phone),
+                    paymentMethod,
+                }),
+            });
+            const orderData = await orderRes.json();
+            if (!orderRes.ok || !orderData.ok) {
+                setOrderError(orderData.error || (lang === 'tr' ? 'Sipariş oluşturulamadı.' : 'Could not create order.'));
+                return;
+            }
+
+            // Step 2: For credit card, redirect to Shopify checkout
+            if (paymentMethod === 'credit_card') {
+                const checkoutUrl = await createShopifyCheckout(
+                    cartItems.map(item => ({
+                        name: item.name,
+                        quantity: item.quantity,
+                        size: item.size,
+                        color: item.color,
+                    })),
+                );
+
+                if (checkoutUrl) {
+                    window.location.href = checkoutUrl;
+                } else {
+                    setOrderError(lang === 'tr'
+                        ? 'Ödeme sayfası oluşturulamadı. Lütfen ürün isimlerinin Shopify ile eşleştiğinden emin olun.'
+                        : 'Could not create checkout. Please ensure product names match Shopify.');
+                }
+            } else {
+                // Bank transfer — go directly to success
+                router.push(`/order-success?order=${encodeURIComponent(orderData.orderNumber)}`);
+            }
+        } catch {
+            setOrderError(lang === 'tr' ? 'Bağlantı hatası. Lütfen tekrar deneyin.' : 'Connection error. Please try again.');
+        } finally {
+            setOrderLoading(false);
+        }
     }
 
     /* ------- Empty cart guard ------- */
@@ -405,7 +477,7 @@ export default function CheckoutPage() {
                     </FadeIn>
                 )}
 
-                {/* =================== STEP 4: PAYMENT (COMING SOON) =================== */}
+                {/* =================== STEP 4: PAYMENT =================== */}
                 {currentStep === 'payment' && (
                     <FadeIn>
                         <div className="space-y-8">
@@ -434,6 +506,19 @@ export default function CheckoutPage() {
                                         </div>
                                     ))}
                                 </div>
+
+                                {/* Shipping info summary */}
+                                <div className="mt-4 p-3 border border-vant-light/5 bg-vant-gray/20">
+                                    <p className="text-xs font-heading uppercase tracking-wider text-vant-muted mb-2">
+                                        {lang === 'tr' ? 'Teslimat Adresi' : 'Delivery Address'}
+                                    </p>
+                                    <p className="text-sm text-vant-light/80 font-body">
+                                        {shipping.firstName} {shipping.lastName}<br />
+                                        {shipping.address}<br />
+                                        {shipping.district ? `${shipping.district}, ` : ''}{shipping.city} {shipping.postalCode}
+                                    </p>
+                                </div>
+
                                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-vant-light/5">
                                     <span className="font-heading text-sm uppercase tracking-wider text-vant-muted">
                                         {t.cart.total[lang]}
@@ -444,28 +529,165 @@ export default function CheckoutPage() {
                                 </div>
                             </div>
 
-                            {/* Coming Soon */}
-                            <div className="p-6 border border-vant-purple/20 bg-vant-purple/5 text-center">
-                                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-vant-purple/10 flex items-center justify-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6 text-vant-purple">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+                            {/* Payment method selection */}
+                            <div>
+                                <h2 className="font-heading text-sm uppercase tracking-wider text-vant-muted mb-4">
+                                    {lang === 'tr' ? 'Ödeme Yöntemi' : 'Payment Method'}
+                                </h2>
+                                <div className="space-y-3">
+
+                                    <label
+                                        className={`flex items-start gap-3 p-4 border cursor-pointer transition-all duration-300 ${paymentMethod === 'bank_transfer'
+                                            ? 'border-vant-purple bg-vant-purple/5'
+                                            : 'border-vant-light/10 hover:border-vant-light/30'
+                                            }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="paymentMethod"
+                                            value="bank_transfer"
+                                            checked={paymentMethod === 'bank_transfer'}
+                                            onChange={() => setPaymentMethod('bank_transfer')}
+                                            className="mt-1 accent-vant-purple"
+                                        />
+                                        <div>
+                                            <p className="font-heading text-sm uppercase tracking-wider text-vant-light">
+                                                {lang === 'tr' ? 'Havale / EFT' : 'Bank Transfer'}
+                                            </p>
+                                            <p className="text-xs text-vant-muted mt-1 font-body">
+                                                {lang === 'tr'
+                                                    ? 'Sipariş sonrası banka hesap bilgileri paylaşılacaktır.'
+                                                    : 'Bank account details will be shared after order placement.'}
+                                            </p>
+                                        </div>
+                                    </label>
+
+                                    <label
+                                        className={`flex items-start gap-3 p-4 border cursor-pointer transition-all duration-300 ${paymentMethod === 'credit_card'
+                                            ? 'border-vant-purple bg-vant-purple/5'
+                                            : 'border-vant-light/10 hover:border-vant-light/30'
+                                            }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="paymentMethod"
+                                            value="credit_card"
+                                            checked={paymentMethod === 'credit_card'}
+                                            onChange={() => setPaymentMethod('credit_card')}
+                                            className="mt-1 accent-vant-purple"
+                                        />
+                                        <div>
+                                            <p className="font-heading text-sm uppercase tracking-wider text-vant-light">
+                                                {lang === 'tr' ? 'Kredi / Banka Kartı' : 'Credit / Debit Card'}
+                                            </p>
+                                            <p className="text-xs text-vant-muted mt-1 font-body">
+                                                {lang === 'tr'
+                                                    ? 'Shopify güvencesiyle güvenli online ödeme.'
+                                                    : 'Secure online payment via Shopify.'}
+                                            </p>
+                                        </div>
+                                    </label>
                                 </div>
-                                <h3 className="font-heading text-lg uppercase tracking-wider text-vant-purple mb-2">
-                                    {t.payment.comingSoon[lang]}
-                                </h3>
-                                <p className="text-sm text-vant-muted font-body leading-relaxed max-w-md mx-auto">
-                                    {t.payment.comingSoonMsg[lang]}
-                                </p>
                             </div>
 
+                            {/* Bank transfer info (show only when bank_transfer selected) */}
+                            {paymentMethod === 'bank_transfer' && (
+                                <div className="p-4 border border-vant-purple/20 bg-vant-purple/5">
+                                    <p className="text-xs font-heading uppercase tracking-wider text-vant-purple mb-3">
+                                        {lang === 'tr' ? 'Hesap Bilgileri' : 'Bank Details'}
+                                    </p>
+                                    <div className="space-y-1 text-sm text-vant-light/80 font-body">
+                                        <p><strong>Banka:</strong> Ziraat Bankası</p>
+                                        <p><strong>IBAN:</strong> TR00 0000 0000 0000 0000 0000 00</p>
+                                        <p><strong>Hesap Sahibi:</strong> VANT Art</p>
+                                    </div>
+                                    <p className="mt-3 text-xs text-vant-muted font-body italic">
+                                        {lang === 'tr'
+                                            ? 'Açıklama kısmına sipariş numaranızı yazmayı unutmayın.'
+                                            : 'Please include your order number in the transfer description.'}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Shopify checkout info */}
+                            {paymentMethod === 'credit_card' && (
+                                <div className="p-4 border border-vant-purple/20 bg-vant-purple/5">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-vant-purple">
+                                            <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd" />
+                                        </svg>
+                                        <span className="text-sm font-heading uppercase tracking-wider text-vant-purple">
+                                            {lang === 'tr' ? 'Güvenli Ödeme' : 'Secure Payment'}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-vant-muted font-body">
+                                        {lang === 'tr'
+                                            ? 'Siparişi tamamladığınızda Shopify güvenli ödeme sayfasına yönlendirileceksiniz.'
+                                            : 'You will be redirected to Shopify\'s secure checkout page to complete your payment.'}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Free shipping badge */}
+                            <div className="flex items-center gap-3 p-3 border border-green-500/20 bg-green-500/5">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-green-400 flex-shrink-0">
+                                    <path d="M3.375 4.5C2.339 4.5 1.5 5.34 1.5 6.375V13.5h1.218c.252-.443.592-.83 1-.14a3.72 3.72 0 011.657-.388c.637 0 1.233.164 1.758.463.195.112.376.24.54.385h5.154c.164-.145.345-.273.54-.385a3.688 3.688 0 011.758-.463c.637 0 1.218.149 1.727.406.396.2.725.472 1.003.797H21V7.5a3 3 0 00-3-3H3.375z" />
+                                    <path fillRule="evenodd" d="M5.375 16.5a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zm0-1.5a.75.75 0 100-1.5.75.75 0 000 1.5zM15.375 16.5a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zm0-1.5a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+                                </svg>
+                                <span className="text-sm text-green-400 font-heading uppercase tracking-wider">
+                                    {lang === 'tr' ? 'Ücretsiz Kargo' : 'Free Shipping'}
+                                </span>
+                            </div>
+
+                            {/* Distance sales agreement */}
+                            <label className="flex items-start gap-3 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={agreementAccepted}
+                                    onChange={(e) => setAgreementAccepted(e.target.checked)}
+                                    className="mt-1 w-4 h-4 accent-vant-purple cursor-pointer"
+                                />
+                                <span className="text-sm text-vant-light/80 font-body group-hover:text-vant-purple transition-colors">
+                                    {lang === 'tr' ? (
+                                        <>
+                                            <Link href="/distance-sales" target="_blank" className="text-vant-purple underline">
+                                                Mesafeli Satış Sözleşmesi
+                                            </Link>
+                                            {`'yi okudum ve kabul ediyorum.`}
+                                        </>
+                                    ) : (
+                                        <>
+                                            I have read and accept the{' '}
+                                            <Link href="/distance-sales" target="_blank" className="text-vant-purple underline">
+                                                Distance Sales Agreement
+                                            </Link>.
+                                        </>
+                                    )}
+                                </span>
+                            </label>
+
+                            {/* Order error */}
+                            {orderError && (
+                                <div className="p-3 border border-red-400/30 bg-red-400/5">
+                                    <p className="text-sm text-red-400 font-body">{orderError}</p>
+                                </div>
+                            )}
+
+                            {/* Actions */}
                             <div className="flex items-center justify-between pt-4">
                                 <button onClick={goBack} className="btn-secondary">
                                     {t.checkout.back[lang]}
                                 </button>
-                                <Link href="/drop" className="btn-primary">
-                                    {t.cart.continueShopping[lang]}
-                                </Link>
+                                <button
+                                    onClick={handlePlaceOrder}
+                                    disabled={!agreementAccepted || orderLoading}
+                                    className="btn-primary disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                    {orderLoading
+                                        ? (lang === 'tr' ? 'Sipariş oluşturuluyor...' : 'Placing order...')
+                                        : (lang === 'tr' ? 'Siparişi Tamamla' : 'Place Order')
+                                    }
+                                </button>
                             </div>
                         </div>
                     </FadeIn>
