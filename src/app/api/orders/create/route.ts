@@ -110,11 +110,37 @@ export async function POST(req: NextRequest) {
             0,
         );
 
-        const { data: customer } = await serviceClient
-            .from('customers')
-            .select('id')
-            .eq('phone', customerPhone)
-            .maybeSingle();
+        const normalizedEmail = shipping.email?.toLowerCase().trim();
+        let customerId = null;
+
+        if (normalizedEmail) {
+            // First try to find existing customer by email
+            const { data: existingCustomer } = await serviceClient
+                .from('customers')
+                .select('id')
+                .eq('email', normalizedEmail)
+                .maybeSingle();
+
+            if (existingCustomer) {
+                customerId = existingCustomer.id;
+            } else {
+                // If not found, create one
+                const { data: newCustomer, error: createError } = await serviceClient
+                    .from('customers')
+                    .insert({
+                        email: normalizedEmail,
+                        phone: customerPhone || null,
+                        first_name: shipping.firstName,
+                        last_name: shipping.lastName,
+                    })
+                    .select('id')
+                    .single();
+                
+                if (!createError && newCustomer) {
+                    customerId = newCustomer.id;
+                }
+            }
+        }
 
         const shippingAddress = {
             firstName: shipping.firstName,
@@ -130,7 +156,7 @@ export async function POST(req: NextRequest) {
         const { data: order, error: orderError } = await serviceClient
             .from('orders')
             .insert({
-                customer_id: customer?.id || null,
+                customer_id: customerId,
                 status: 'pending',
                 shipping_address: shippingAddress,
                 payment_method: resolvedPaymentMethod,

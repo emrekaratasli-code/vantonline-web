@@ -113,6 +113,7 @@ export default function CheckoutPage() {
                     firstName: user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || prev.firstName,
                     lastName: user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || prev.lastName,
                 }));
+                setOtpVerified(true);
             }
         };
         fetchSession();
@@ -220,6 +221,12 @@ export default function CheckoutPage() {
     function goNext() {
         if (currentStep === 'shipping' && !validateShipping()) return;
         if (currentStep === 'otp' && !otpVerified) return;
+
+        if (currentStep === 'shipping' && otpVerified) {
+            setCurrentStep('consent');
+            return;
+        }
+
         const currentIdx = STEPS.indexOf(currentStep);
         const nextIdx = currentIdx + 1;
         if (nextIdx < STEPS.length) setCurrentStep(STEPS[nextIdx]);
@@ -231,6 +238,12 @@ export default function CheckoutPage() {
             setIyzicoFormHtml('');
             return;
         }
+
+        if (currentStep === 'consent' && otpVerified) {
+            setCurrentStep('shipping');
+            return;
+        }
+
         const currentIdx = STEPS.indexOf(currentStep);
         const prevIdx = currentIdx - 1;
         if (prevIdx >= 0) setCurrentStep(STEPS[prevIdx]);
