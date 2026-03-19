@@ -78,6 +78,7 @@ export default function CheckoutPage() {
     const [otpVerified, setOtpVerified] = useState(false);
     const [otpLoading, setOtpLoading] = useState(false);
     const [otpMessage, setOtpMessage] = useState('');
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
     // Consent
     const [consent, setConsent] = useState<ConsentData>({ marketingSms: false, marketingEmail: false });
@@ -95,6 +96,46 @@ export default function CheckoutPage() {
     /** Format kuruş → TRY */
     const formatPrice = (kuruş: number) =>
         `${t.product.currency[lang]}${(kuruş / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
+
+    // Fetch user session on mount
+    useEffect(() => {
+        const fetchSession = async () => {
+            const { createBrowserSupabaseClient } = await import('@/lib/supabase');
+            const supabase = createBrowserSupabaseClient();
+            if (!supabase) return;
+            
+            const { data } = await supabase.auth.getSession();
+            if (data.session?.user) {
+                const user = data.session.user;
+                setShipping(prev => ({
+                    ...prev,
+                    email: user.email || prev.email,
+                    firstName: user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || prev.firstName,
+                    lastName: user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || prev.lastName,
+                }));
+            }
+        };
+        fetchSession();
+    }, []);
+
+    async function handleGoogleLogin() {
+        setIsGoogleLoading(true);
+        try {
+            const { createBrowserSupabaseClient } = await import('@/lib/supabase');
+            const supabase = createBrowserSupabaseClient();
+            if (!supabase) return;
+
+            await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + '/checkout'
+                }
+            });
+        } catch (e) {
+            console.error('Google login error', e);
+            setIsGoogleLoading(false);
+        }
+    }
 
     /* ------- step index ------- */
     const visibleSteps = STEPS;
@@ -360,6 +401,25 @@ export default function CheckoutPage() {
                 {/* =================== STEP 1: SHIPPING =================== */}
                 {currentStep === 'shipping' && (
                     <FadeIn>
+                        <div className="mb-8 p-6 border border-vant-purple/30 rounded bg-vant-dark/50 text-center">
+                            <p className="text-sm text-vant-muted font-body mb-4">
+                                {lang === 'tr' ? 'Vakit kaybetmeden devam etmek ister misiniz?' : 'Want to speed up checkout?'}
+                            </p>
+                            <button
+                                onClick={handleGoogleLogin}
+                                disabled={isGoogleLoading}
+                                className="inline-flex items-center justify-center gap-3 px-6 py-3 border border-vant-primary/30 rounded-sm hover:border-vant-purple transition-all bg-white text-black font-medium text-sm hover:opacity-90 disabled:opacity-50"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                                </svg>
+                                {isGoogleLoading ? '...' : (lang === 'tr' ? 'Google ile Hızlı Devam Et' : 'Continue with Google')}
+                            </button>
+                        </div>
+                        
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {shippingField('firstName', t.checkout.firstName[lang])}
