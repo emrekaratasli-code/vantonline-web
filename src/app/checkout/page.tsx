@@ -1,13 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n';
 import { useCart } from '@/lib/CartContext';
-import { createShopifyCheckout } from '@/lib/shopify';
 import FadeIn from '@/components/FadeIn';
 
 /* ------------------------------------------------------------------ */
@@ -31,7 +29,7 @@ interface ConsentData {
 
 type PaymentMethod = 'bank_transfer' | 'credit_card';
 
-type Step = 'shipping' | 'otp' | 'consent' | 'payment';
+type Step = 'shipping' | 'otp' | 'consent' | 'payment' | 'iyzico_form';
 
 const STEPS: Step[] = ['shipping', 'otp', 'consent', 'payment'];
 
@@ -90,21 +88,28 @@ export default function CheckoutPage() {
     const [orderLoading, setOrderLoading] = useState(false);
     const [orderError, setOrderError] = useState('');
 
+    // iyzico checkout form
+    const [iyzicoFormHtml, setIyzicoFormHtml] = useState('');
+    const iyzicoFormRef = useRef<HTMLDivElement>(null);
+
     /** Format kuruş → TRY */
     const formatPrice = (kuruş: number) =>
         `${t.product.currency[lang]}${(kuruş / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
 
     /* ------- step index ------- */
-    const stepIndex = STEPS.indexOf(currentStep);
+    const visibleSteps = STEPS;
+    const stepIndex = currentStep === 'iyzico_form'
+        ? STEPS.length // beyond last visible step
+        : STEPS.indexOf(currentStep);
 
     /* ------- validation ------- */
     function validateShipping(): boolean {
         const e: Record<string, string> = {};
         if (!shipping.firstName.trim()) e.firstName = t.checkout.required[lang];
         if (!shipping.lastName.trim()) e.lastName = t.checkout.required[lang];
-        if (shipping.email.trim() && !isValidEmail(shipping.email)) e.email = t.checkout.invalidEmail[lang];
-        if (!shipping.phone.trim()) e.phone = t.checkout.required[lang];
-        else if (!isValidPhone(shipping.phone)) e.phone = t.checkout.invalidPhone[lang];
+        if (!shipping.email.trim()) e.email = t.checkout.required[lang];
+        else if (!isValidEmail(shipping.email)) e.email = t.checkout.invalidEmail[lang];
+        if (shipping.phone.trim() && !isValidPhone(shipping.phone)) e.phone = t.checkout.invalidPhone[lang];
         if (!shipping.address.trim()) e.address = t.checkout.required[lang];
         if (!shipping.city.trim()) e.city = t.checkout.required[lang];
         setErrors(e);
@@ -119,7 +124,7 @@ export default function CheckoutPage() {
             const res = await fetch('/api/auth/send-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: toE164(shipping.phone) }),
+                body: JSON.stringify({ email: shipping.email }),
             });
             const data = await res.json();
             if (res.ok) {
@@ -143,7 +148,8 @@ export default function CheckoutPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    phone: toE164(shipping.phone),
+                    email: shipping.email,
+                    phone: shipping.phone ? toE164(shipping.phone) : null,
                     code: otpCode,
                     customer: {
                         firstName: shipping.firstName,
@@ -173,14 +179,40 @@ export default function CheckoutPage() {
     function goNext() {
         if (currentStep === 'shipping' && !validateShipping()) return;
         if (currentStep === 'otp' && !otpVerified) return;
-        const nextIdx = stepIndex + 1;
+        const currentIdx = STEPS.indexOf(currentStep);
+        const nextIdx = currentIdx + 1;
         if (nextIdx < STEPS.length) setCurrentStep(STEPS[nextIdx]);
     }
 
     function goBack() {
-        const prevIdx = stepIndex - 1;
+        if (currentStep === 'iyzico_form') {
+            setCurrentStep('payment');
+            setIyzicoFormHtml('');
+            return;
+        }
+        const currentIdx = STEPS.indexOf(currentStep);
+        const prevIdx = currentIdx - 1;
         if (prevIdx >= 0) setCurrentStep(STEPS[prevIdx]);
     }
+
+    /* ------- iyzico form injection ------- */
+    useEffect(() => {
+        if (currentStep === 'iyzico_form' && iyzicoFormHtml && iyzicoFormRef.current) {
+            const container = iyzicoFormRef.current;
+            container.innerHTML = iyzicoFormHtml;
+
+            // Execute any <script> tags in the injected HTML
+            const scripts = container.querySelectorAll('script');
+            scripts.forEach((oldScript) => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach((attr) =>
+                    newScript.setAttribute(attr.name, attr.value),
+                );
+                newScript.textContent = oldScript.textContent;
+                oldScript.parentNode?.replaceChild(newScript, oldScript);
+            });
+        }
+    }, [currentStep, iyzicoFormHtml]);
 
     /* ------- place order ------- */
     async function handlePlaceOrder() {
@@ -213,24 +245,29 @@ export default function CheckoutPage() {
                 return;
             }
 
-            // Step 2: For credit card, redirect to Shopify checkout
+            // Step 2: For credit card, initialize iyzico checkout form
             if (paymentMethod === 'credit_card') {
-                const checkoutUrl = await createShopifyCheckout(
-                    cartItems.map(item => ({
-                        name: item.name,
-                        quantity: item.quantity,
-                        size: item.size,
-                        color: item.color,
-                    })),
-                );
+                const paymentRes = await fetch('/api/payment/init', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        orderId: orderData.orderId,
+                        shipping,
+                        customerPhone: toE164(shipping.phone),
+                    }),
+                });
+                const paymentData = await paymentRes.json();
 
-                if (checkoutUrl) {
-                    window.location.href = checkoutUrl;
-                } else {
-                    setOrderError(lang === 'tr'
-                        ? 'Ödeme sayfası oluşturulamadı. Lütfen ürün isimlerinin Shopify ile eşleştiğinden emin olun.'
-                        : 'Could not create checkout. Please ensure product names match Shopify.');
+                if (!paymentRes.ok || !paymentData.ok) {
+                    setOrderError(paymentData.error || (lang === 'tr'
+                        ? 'Ödeme sayfası oluşturulamadı.'
+                        : 'Could not create payment form.'));
+                    return;
                 }
+
+                // Show iyzico checkout form
+                setIyzicoFormHtml(paymentData.checkoutFormContent);
+                setCurrentStep('iyzico_form');
             } else {
                 // Bank transfer — go directly to success
                 router.push(`/order-success?order=${encodeURIComponent(orderData.orderNumber)}`);
@@ -243,7 +280,7 @@ export default function CheckoutPage() {
     }
 
     /* ------- Empty cart guard ------- */
-    if (cartItems.length === 0) {
+    if (cartItems.length === 0 && currentStep !== 'iyzico_form') {
         return (
             <section className="container-vant py-20 text-center">
                 <FadeIn>
@@ -286,6 +323,7 @@ export default function CheckoutPage() {
         otp: t.checkout.stepOtp[lang],
         consent: t.checkout.stepConsent[lang],
         payment: t.checkout.stepPayment[lang],
+        iyzico_form: lang === 'tr' ? 'Ödeme' : 'Pay',
     };
 
     return (
@@ -297,24 +335,26 @@ export default function CheckoutPage() {
             </FadeIn>
 
             {/* Step indicator */}
-            <FadeIn delay={0.05}>
-                <div className="flex items-center justify-center gap-2 mb-12 flex-wrap">
-                    {STEPS.map((s, i) => (
-                        <div key={s} className="flex items-center gap-2">
-                            <div className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-heading uppercase tracking-wider transition-colors ${i <= stepIndex
-                                ? 'text-vant-purple border border-vant-purple/40'
-                                : 'text-vant-muted/40 border border-vant-light/5'
-                                }`}>
-                                <span className="font-bold">{i + 1}</span>
-                                <span className="hidden sm:inline">{stepLabels[s]}</span>
+            {currentStep !== 'iyzico_form' && (
+                <FadeIn delay={0.05}>
+                    <div className="flex items-center justify-center gap-2 mb-12 flex-wrap">
+                        {visibleSteps.map((s, i) => (
+                            <div key={s} className="flex items-center gap-2">
+                                <div className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-heading uppercase tracking-wider transition-colors ${i <= stepIndex
+                                    ? 'text-vant-purple border border-vant-purple/40'
+                                    : 'text-vant-muted/40 border border-vant-light/5'
+                                    }`}>
+                                    <span className="font-bold">{i + 1}</span>
+                                    <span className="hidden sm:inline">{stepLabels[s]}</span>
+                                </div>
+                                {i < visibleSteps.length - 1 && (
+                                    <div className={`w-6 h-[1px] ${i < stepIndex ? 'bg-vant-purple' : 'bg-vant-light/10'}`} />
+                                )}
                             </div>
-                            {i < STEPS.length - 1 && (
-                                <div className={`w-6 h-[1px] ${i < stepIndex ? 'bg-vant-purple' : 'bg-vant-light/10'}`} />
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </FadeIn>
+                        ))}
+                    </div>
+                </FadeIn>
+            )}
 
             <div className="max-w-2xl mx-auto">
                 {/* =================== STEP 1: SHIPPING =================== */}
@@ -326,12 +366,11 @@ export default function CheckoutPage() {
                                 {shippingField('lastName', t.checkout.lastName[lang])}
                             </div>
                             {shippingField('email', t.checkout.email[lang], 'email')}
-                            {shippingField('phone', t.checkout.phone[lang], 'tel', t.checkout.phonePlaceholder[lang])}
+                            {shippingField('phone', lang === 'tr' ? 'Telefon (İsteğe Bağlı)' : 'Phone (Optional)', 'tel', t.checkout.phonePlaceholder[lang])}
                             {shippingField('address', t.checkout.address[lang])}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {shippingField('city', t.checkout.city[lang])}
                                 {shippingField('district', t.checkout.district[lang])}
-                                {shippingField('postalCode', t.checkout.postalCode[lang])}
                             </div>
                             <div className="pt-4">
                                 <button onClick={goNext} className="btn-primary w-full">
@@ -347,10 +386,10 @@ export default function CheckoutPage() {
                     <FadeIn>
                         <div className="space-y-6 text-center">
                             <p className="text-sm text-vant-muted font-body">
-                                {t.otp.enterPhone[lang]}
+                                {lang === 'tr' ? 'Lütfen e-posta adresinizi doğrulayın' : 'Please verify your email address'}
                             </p>
                             <p className="font-heading text-lg text-vant-light">
-                                {toE164(shipping.phone)}
+                                {shipping.email}
                             </p>
 
                             {!otpSent ? (
@@ -515,7 +554,7 @@ export default function CheckoutPage() {
                                     <p className="text-sm text-vant-light/80 font-body">
                                         {shipping.firstName} {shipping.lastName}<br />
                                         {shipping.address}<br />
-                                        {shipping.district ? `${shipping.district}, ` : ''}{shipping.city} {shipping.postalCode}
+                                        {shipping.district ? `${shipping.district}, ` : ''}{shipping.city}
                                     </p>
                                 </div>
 
@@ -582,8 +621,8 @@ export default function CheckoutPage() {
                                             </p>
                                             <p className="text-xs text-vant-muted mt-1 font-body">
                                                 {lang === 'tr'
-                                                    ? 'Shopify güvencesiyle güvenli online ödeme.'
-                                                    : 'Secure online payment via Shopify.'}
+                                                    ? 'iyzico güvencesiyle güvenli online ödeme. Taksit imkânı.'
+                                                    : 'Secure online payment via iyzico. Installment options available.'}
                                             </p>
                                         </div>
                                     </label>
@@ -609,7 +648,7 @@ export default function CheckoutPage() {
                                 </div>
                             )}
 
-                            {/* Shopify checkout info */}
+                            {/* iyzico secure payment info */}
                             {paymentMethod === 'credit_card' && (
                                 <div className="p-4 border border-vant-purple/20 bg-vant-purple/5">
                                     <div className="flex items-center gap-2 mb-2">
@@ -622,8 +661,8 @@ export default function CheckoutPage() {
                                     </div>
                                     <p className="text-xs text-vant-muted font-body">
                                         {lang === 'tr'
-                                            ? 'Siparişi tamamladığınızda Shopify güvenli ödeme sayfasına yönlendirileceksiniz.'
-                                            : 'You will be redirected to Shopify\'s secure checkout page to complete your payment.'}
+                                            ? 'iyzico güvencesiyle güvenli ödeme. Taksit seçenekleri bir sonraki adımda gösterilecektir.'
+                                            : 'Secure payment powered by iyzico. Installment options will be shown in the next step.'}
                                     </p>
                                 </div>
                             )}
@@ -684,9 +723,49 @@ export default function CheckoutPage() {
                                     className="btn-primary disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
                                     {orderLoading
-                                        ? (lang === 'tr' ? 'Sipariş oluşturuluyor...' : 'Placing order...')
-                                        : (lang === 'tr' ? 'Siparişi Tamamla' : 'Place Order')
+                                        ? (lang === 'tr' ? 'İşleniyor...' : 'Processing...')
+                                        : paymentMethod === 'credit_card'
+                                            ? (lang === 'tr' ? 'Ödemeye Geç' : 'Proceed to Payment')
+                                            : (lang === 'tr' ? 'Siparişi Tamamla' : 'Place Order')
                                     }
+                                </button>
+                            </div>
+                        </div>
+                    </FadeIn>
+                )}
+
+                {/* =================== STEP 5: IYZICO FORM =================== */}
+                {currentStep === 'iyzico_form' && (
+                    <FadeIn>
+                        <div className="space-y-6">
+                            {/* Header */}
+                            <div className="text-center">
+                                <div className="flex items-center justify-center gap-2 mb-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-vant-purple">
+                                        <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clipRule="evenodd" />
+                                    </svg>
+                                    <h2 className="font-heading text-lg uppercase tracking-wider text-vant-purple">
+                                        {lang === 'tr' ? 'Güvenli Ödeme' : 'Secure Payment'}
+                                    </h2>
+                                </div>
+                                <p className="text-xs text-vant-muted font-body">
+                                    {lang === 'tr'
+                                        ? 'Kart bilgileriniz iyzico tarafından güvenle işlenmektedir.'
+                                        : 'Your card details are securely processed by iyzico.'}
+                                </p>
+                            </div>
+
+                            {/* iyzico checkout form container */}
+                            <div
+                                ref={iyzicoFormRef}
+                                id="iyzipay-checkout-form"
+                                className="iyzico-form-container min-h-[400px] bg-white rounded-lg overflow-hidden"
+                            />
+
+                            {/* Back button */}
+                            <div className="pt-4">
+                                <button onClick={goBack} className="btn-secondary">
+                                    {lang === 'tr' ? '← Geri Dön' : '← Go Back'}
                                 </button>
                             </div>
                         </div>

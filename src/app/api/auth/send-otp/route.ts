@@ -25,17 +25,17 @@ function isRateLimited(key: string): boolean {
 /* ------------------------------------------------------------------ */
 export async function POST(req: NextRequest) {
     try {
-        const { phone } = await req.json();
+        const { email } = await req.json();
 
-        if (!phone || typeof phone !== 'string' || !/^\+905\d{9}$/.test(phone)) {
+        if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             return NextResponse.json(
-                { error: 'Geçerli bir telefon numarası girin (+905XXXXXXXXX).' },
+                { error: 'Lütfen geçerli bir e-posta adresi girin.' },
                 { status: 400 },
             );
         }
 
-        // Rate limit by phone
-        if (isRateLimited(`phone:${phone}`)) {
+        // Rate limit by email
+        if (isRateLimited(`email:${email}`)) {
             return NextResponse.json(
                 { error: 'Çok fazla deneme. Lütfen bir dakika bekleyin.' },
                 { status: 429 },
@@ -59,17 +59,17 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Dev bypass — skip real SMS in development for testing
+        // Dev bypass — skip real email in development for testing
         if (process.env.NODE_ENV === 'development') {
-            console.log(`[send-otp] DEV MODE — skipping real SMS for ${phone}. Use code: 123456`);
+            console.log(`[send-otp] DEV MODE — skipping real Auth email for ${email}. Use code: 123456`);
             return NextResponse.json({ ok: true, dev: true });
         }
 
-        // Trigger Supabase Phone OTP via SMS (Twilio)
+        // Trigger Supabase API Email OTP
         const { error } = await supabase.auth.signInWithOtp({
-            phone,
+            email,
             options: {
-                channel: 'sms',
+                shouldCreateUser: true,
             }
         });
 

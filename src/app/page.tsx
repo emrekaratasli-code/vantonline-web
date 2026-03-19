@@ -13,11 +13,11 @@ export default function HomePage() {
     const [featured, setFeatured] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Hero media slideshow — add more items here to extend
-    const heroMedia = [
-        { src: '/videos/hero.mp4', type: 'video' as const },
-        { src: '/videos/Hero1.jpg', type: 'image' as const },
-    ];
+    // Hero media state — defaults to fallback until loaded
+    const [heroMedia, setHeroMedia] = useState<{ src: string; type: 'video' | 'image' }[]>([
+        { src: '/videos/hero.mp4', type: 'video' },
+        { src: '/videos/Hero1.jpg', type: 'image' },
+    ]);
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
 
     const handleMediaEnded = () => {
@@ -26,16 +26,27 @@ export default function HomePage() {
 
     // For images, auto-advance after 5 seconds
     useEffect(() => {
+        if (!heroMedia || heroMedia.length === 0) return;
         const current = heroMedia[currentMediaIndex];
-        if (current.type === 'image') {
+        if (current && current.type === 'image') {
             const timer = setTimeout(() => {
                 setCurrentMediaIndex((prev) => (prev + 1) % heroMedia.length);
             }, 5000);
             return () => clearTimeout(timer);
         }
-    }, [currentMediaIndex]);
+    }, [currentMediaIndex, heroMedia]);
 
     useEffect(() => {
+        // Fetch hero assets
+        import('@/lib/supabaseHero').then(m => {
+            m.getHeroAssets().then(data => {
+                if (data && data.length > 0) {
+                    setHeroMedia(data.map(item => ({ src: item.src, type: item.type })));
+                }
+            }).catch(console.error);
+        });
+
+        // Fetch products
         import('@/lib/supabaseProducts').then(m => {
             m.getFeaturedProducts().then(data => {
                 setFeatured(data);

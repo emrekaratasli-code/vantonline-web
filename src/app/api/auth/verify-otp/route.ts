@@ -24,9 +24,9 @@ function isRateLimited(key: string): boolean {
 /* ------------------------------------------------------------------ */
 export async function POST(req: NextRequest) {
     try {
-        const { phone, code, customer, consents } = await req.json();
+        const { email, phone, code, customer, consents } = await req.json();
 
-        if (!phone || !code || typeof code !== 'string' || code.length !== 6) {
+        if (!email || !code || typeof code !== 'string' || code.length !== 6) {
             return NextResponse.json(
                 { error: 'Geçersiz istek.' },
                 { status: 400 },
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
         // Rate limit
         const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-        if (isRateLimited(`verify:${phone}`) || isRateLimited(`verify-ip:${ip}`)) {
+        if (isRateLimited(`verify:${email}`) || isRateLimited(`verify-ip:${ip}`)) {
             return NextResponse.json(
                 { error: 'Çok fazla deneme. Lütfen bir dakika bekleyin.' },
                 { status: 429 },
@@ -47,26 +47,26 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Sistem hatası.' }, { status: 500 });
         }
 
-        // Dev bypass — accept 123456 in development without Twilio
+        // Dev bypass — accept 123456 in development without hitting Auth API
         if (process.env.NODE_ENV === 'development' && code === '123456') {
-            console.log(`[verify-otp] DEV MODE — accepting test code for ${phone}`);
+            console.log(`[verify-otp] DEV MODE — accepting test code for ${email}`);
 
             // Still upsert customer data in dev mode
             const serviceClient = createServiceRoleClient();
             if (serviceClient) {
                 await serviceClient
                     .from('customers')
-                    .upsert({ phone, verified: true }, { onConflict: 'phone' });
+                    .upsert({ email, phone: phone || null, verified: true }, { onConflict: 'email' });
             }
 
             return NextResponse.json({ ok: true, dev: true });
         }
 
-        // Verify OTP
+        // Verify OTP via Email
         const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
-            phone,
+            email,
             token: code,
-            type: 'sms',
+            type: 'email',
         });
 
         if (verifyError) {
@@ -93,14 +93,14 @@ export async function POST(req: NextRequest) {
             .from('customers')
             .upsert(
                 {
-                    phone,
-                    email: customer?.email || null,
+                    email,
+                    phone: phone || null,
                     first_name: customer?.firstName || null,
                     last_name: customer?.lastName || null,
                     auth_user_id: authUserId,
                     updated_at: now,
                 },
-                { onConflict: 'phone' },
+                { onConflict: 'email' },
             )
             .select('id')
             .single();
