@@ -97,7 +97,41 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                     </div>
                 </div>
 
-                <div className={`mt-16 pt-8 border-t ${isHomeNeo ? 'border-vant-light/20' : 'border-vant-light/5'}`}>
+                {/* Payment Logos — iyzico requirement */}
+                <div className={`mt-12 pt-8 border-t ${isHomeNeo ? 'border-vant-light/20' : 'border-vant-light/5'}`}>
+                    <div className="flex flex-col items-center gap-3">
+                        <span className="text-xs font-heading uppercase tracking-[0.15em] text-vant-muted">
+                            {lang === 'tr' ? 'Güvenli Ödeme' : 'Secure Payment'}
+                        </span>
+                        <div className="flex items-center gap-5">
+                            {/* iyzico ile Öde */}
+                            <div className="flex items-center bg-white rounded px-3 py-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 30" className="h-6 w-auto">
+                                    <rect width="120" height="30" rx="4" fill="#fff"/>
+                                    <text x="8" y="20" fontFamily="Arial, sans-serif" fontSize="11" fontWeight="bold" fill="#1A1A2E">iyzico</text>
+                                    <text x="52" y="20" fontFamily="Arial, sans-serif" fontSize="9" fill="#6C63FF">ile Öde</text>
+                                </svg>
+                            </div>
+                            {/* Visa */}
+                            <div className="flex items-center bg-white rounded px-3 py-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 30" className="h-6 w-auto">
+                                    <rect width="80" height="30" rx="4" fill="#fff"/>
+                                    <text x="10" y="22" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fontStyle="italic" fill="#1A1F71">VISA</text>
+                                </svg>
+                            </div>
+                            {/* MasterCard */}
+                            <div className="flex items-center bg-white rounded px-3 py-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 30" className="h-6 w-auto">
+                                    <circle cx="28" cy="15" r="11" fill="#EB001B"/>
+                                    <circle cx="48" cy="15" r="11" fill="#F79E1B"/>
+                                    <path d="M38 6.8a10.96 10.96 0 0 0-4 8.2 10.96 10.96 0 0 0 4 8.2 10.96 10.96 0 0 0 4-8.2 10.96 10.96 0 0 0-4-8.2z" fill="#FF5F00"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className={`mt-6 pt-6 border-t ${isHomeNeo ? 'border-vant-light/20' : 'border-vant-light/5'}`}>
                     <span className="text-xs text-vant-muted">{'©'} {currentYear} VANT Art. {t.footer.rights[lang]}</span>
                 </div>
             </div>
