@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 
 export default function JarvisWidget() {
     const { lang } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState<{ role: 'bot' | 'user'; text: string }[]>([]);
+    interface Message { role: 'bot' | 'user'; text: string }
+    const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -33,26 +34,37 @@ export default function JarvisWidget() {
         if (!input.trim()) return;
 
         const userMsg = input.trim();
-        setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+        const sessionId = typeof window !== 'undefined' ? (localStorage.getItem('jarvis_session_id') || `web-${Math.random().toString(36).substring(7)}`) : '';
+        
+        setMessages((prev: Message[]) => [...prev, { role: 'user', text: userMsg }]);
         setInput('');
         setIsTyping(true);
 
         try {
-            // This would normally call an API endpoint that talks to our bot's logic
-            // For now, we simulate a response or call the chatbot_api if available
-            // Since we are in the development environment, we'll implement a simple response logic
-            // or a fetch to the local/deployed bot API if configured.
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: userMsg,
+                    session_id: sessionId,
+                }),
+            });
+
+            if (!response.ok) throw new Error('API Error');
+
+            const data = await response.json();
             
-            // Simulating API delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
-            const botResponse = lang === 'tr'
-                ? "Harika bir soru. VANT koleksiyonları sınırlı üretimdir ve her parça bir 'Protokol'ün parçasıdır. Size özel stil önerileri sunabilirim."
-                : "Great question. VANT collections are limited editions and each piece is part of a 'Protocol'. I can offer personalized style suggestions.";
-                
-            setMessages(prev => [...prev, { role: 'bot', text: botResponse }]);
+            if (data.ok) {
+                if (data.session_id && typeof window !== 'undefined') localStorage.setItem('jarvis_session_id', data.session_id);
+                setMessages((prev: Message[]) => [...prev, { role: 'bot', text: data.reply }]);
+            } else {
+                throw new Error(data.error);
+            }
         } catch (_error) {
-            setMessages(prev => [...prev, { role: 'bot', text: 'Error connecting to J.A.R.V.I.S.' }]);
+            const errorMsg = lang === 'tr'
+                ? 'J.A.R.V.I.S. şu an meşgul, lütfen birazdan tekrar deneyin.'
+                : 'J.A.R.V.I.S. is currently busy, please try again later.';
+            setMessages((prev: Message[]) => [...prev, { role: 'bot', text: errorMsg }]);
         } finally {
             setIsTyping(false);
         }
