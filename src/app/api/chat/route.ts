@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * POST /api/chat
  * 
  * Proxy route to J.A.R.V.I.S. Telegram Bot API (Render).
- * This prevents CORS issues and keeps the backend URL concentrated in env vars.
+ * Force rebuild to pick up new env vars.
  */
 
 const BOT_API_URL = process.env.CHATBOT_API_URL;
