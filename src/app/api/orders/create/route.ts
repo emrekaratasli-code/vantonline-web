@@ -37,7 +37,12 @@ export async function POST(req: NextRequest) {
 
         const serviceClient = createServiceRoleClient();
         if (!serviceClient) {
-            return NextResponse.json({ error: 'System error.' }, { status: 500 });
+            const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const hasKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+            return NextResponse.json({ 
+                ok: false, 
+                error: `System error: Supabase client init failed (URL: ${hasUrl}, Key: ${hasKey})` 
+            }, { status: 500 });
         }
 
         const uniqueProductIds = new Set(
