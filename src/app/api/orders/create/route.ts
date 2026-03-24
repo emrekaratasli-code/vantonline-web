@@ -208,9 +208,9 @@ export async function POST(req: NextRequest) {
             orderId: order.id,
             orderNumber,
         });
-    } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
+    } catch (e: any) {
+        const msg = e?.message || String(e);
         console.error('[orders/create] Unexpected error:', msg, e);
-        return NextResponse.json({ error: 'Server error.' }, { status: 500 });
+        return NextResponse.json({ ok: false, error: `Server error: ${msg}` }, { status: 500 });
     }
 }
