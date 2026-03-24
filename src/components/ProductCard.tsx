@@ -40,55 +40,61 @@ export default function ProductCard({ product }: ProductCardProps) {
     const displayPrice = `${t.product.currency[lang]}${(product.price / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
 
     return (
-        <div className="product-card">
+        <div className="product-card group relative">
             {/* Image */}
-            <Link href={`/product/${product.slug}`} className="block relative aspect-[3/4] bg-vant-gray overflow-hidden">
+            <Link href={`/product/${product.slug}`} className="block relative aspect-[3/4] bg-vant-gray overflow-hidden border border-vant-light/5 group-hover:border-vant-purple/30 transition-colors duration-500">
                 <Image
                     src={product.images[0] || '/images/placeholder-product.svg'}
                     alt={product.name}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    className="product-image object-cover"
+                    className="product-image object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
                     loading="lazy"
                     onError={(e) => { (e.target as HTMLImageElement).src = '/images/placeholder-product.svg'; }}
                 />
+                <div className="absolute inset-0 bg-vant-black/0 group-hover:bg-vant-black/10 transition-colors duration-500" />
                 {product.isOutOfStock && (
-                    <div className="absolute top-3 left-3 px-3 py-1 bg-vant-black/80 text-xs font-heading uppercase tracking-wider text-vant-muted">
+                    <div className="absolute top-3 left-3 px-3 py-1 bg-vant-black/80 text-[10px] font-heading uppercase tracking-widest text-vant-muted border border-vant-light/10">
                         {t.product.outOfStock[lang]}
                     </div>
                 )}
             </Link>
 
             {/* Info */}
-            <div className="mt-4 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-heading text-sm uppercase tracking-wider text-vant-light">
+            <div className="mt-5 space-y-3 px-1">
+                <div className="flex flex-col gap-1">
+                    <h3 className="font-heading text-xs uppercase tracking-[0.15em] text-vant-light/90 group-hover:text-vant-purple transition-colors duration-300">
                         {product.name}
                     </h3>
-                    <span className="font-body text-sm text-vant-muted whitespace-nowrap">
-                        {displayPrice}
-                    </span>
+                    <div className="flex items-center justify-between">
+                        <span className="font-body text-sm font-medium text-vant-light">
+                            {displayPrice}
+                        </span>
+                        <div className="h-[1px] flex-1 mx-4 bg-vant-light/5 group-hover:bg-vant-purple/20 transition-colors duration-500" />
+                    </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-3 pt-1">
+                <div className="flex items-center justify-between pt-1">
                     <Link
                         href={`/product/${product.slug}`}
-                        className="text-xs font-heading uppercase tracking-wider text-vant-muted hover:text-vant-purple transition-colors duration-300"
+                        className="text-[10px] font-heading uppercase tracking-[0.2em] text-vant-muted hover:text-vant-light transition-colors duration-300"
                     >
                         {t.product.inspect[lang]}
                     </Link>
-                    <span className="text-vant-light/10">|</span>
+                    
                     {product.isOutOfStock ? (
-                        <span className="text-xs font-heading uppercase tracking-wider text-vant-muted/40">
+                        <span className="text-[10px] font-heading uppercase tracking-[0.2em] text-vant-muted/30">
                             {t.product.outOfStock[lang]}
                         </span>
                     ) : (
                         <button
                             onClick={handleAddToCart}
-                            className="text-xs font-heading uppercase tracking-wider text-vant-purple hover:text-vant-purple-light transition-colors duration-300"
+                            className={`text-[10px] font-heading uppercase tracking-[0.2em] transition-all duration-300 ${
+                                added ? 'text-vant-purple font-bold' : 'text-vant-light hover:text-vant-purple'
+                            }`}
                         >
-                            {added ? t.product.addedToCart[lang] : t.product.addToCart[lang]}
+                            {added ? t.product.addedToCart[lang] : `+ ${t.product.addToCart[lang]}`}
                         </button>
                     )}
                 </div>

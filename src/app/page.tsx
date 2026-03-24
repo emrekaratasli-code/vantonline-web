@@ -195,20 +195,24 @@ export default function HomePage() {
                         }}
                     />
                 </div>
-                <FadeIn>
-                    <div className="relative z-10 max-w-3xl mx-auto text-center">
-                        <h2 className="font-heading text-display font-bold tracking-[-0.015em]">
+                <FadeIn direction="none" duration={1} delay={0.2}>
+                    <div className="relative z-10 max-w-4xl mx-auto text-center px-4">
+                        <h2 className="font-heading text-display font-bold tracking-tight uppercase">
                             {manifestoContent.title}
                         </h2>
-                        <p className="mt-8 text-base md:text-lg text-vant-muted font-body leading-[1.9]">
-                            {manifestoContent.text}
+                        <div className="mt-8 flex justify-center">
+                            <div className="w-12 h-[1px] bg-vant-purple/50" />
+                        </div>
+                        <p className="mt-10 text-lg md:text-xl text-vant-light/80 font-body leading-relaxed max-w-2xl mx-auto italic">
+                            "{manifestoContent.text}"
                         </p>
                         {manifestoContent.question && (
-                            <p className="mt-6 text-base md:text-lg text-vant-light font-heading tracking-[0.01em]">
-                                {manifestoContent.question}
-                            </p>
+                            <FadeIn delay={0.5} direction="up">
+                                <p className="mt-12 text-xl md:text-2xl text-vant-purple font-heading uppercase tracking-[0.2em] animate-pulse">
+                                    {manifestoContent.question}
+                                </p>
+                            </FadeIn>
                         )}
-                        <div className="mt-9 w-14 h-[3px] bg-vant-purple mx-auto" />
                     </div>
                 </FadeIn>
             </section>
