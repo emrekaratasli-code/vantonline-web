@@ -50,16 +50,16 @@ export default function JarvisWidget() {
                 }),
             });
 
-            if (!response.ok) throw new Error('API Error');
-
-            const data = await response.json();
+            const data = await response.json().catch(() => ({ ok: false, error: 'Invalid JSON response' }));
             
-            if (data.ok) {
-                if (data.session_id && typeof window !== 'undefined') localStorage.setItem('jarvis_session_id', data.session_id);
-                setMessages((prev: Message[]) => [...prev, { role: 'bot', text: data.reply }]);
-            } else {
-                throw new Error(data.error);
+            if (!response.ok || !data.ok) {
+                throw new Error(data.error || 'API Error');
             }
+            
+            if (data.session_id && typeof window !== 'undefined') {
+                localStorage.setItem('jarvis_session_id', data.session_id);
+            }
+            setMessages((prev: Message[]) => [...prev, { role: 'bot', text: data.reply }]);
         } catch (err: any) {
             const errorMsg = err.message || (lang === 'tr'
                 ? 'J.A.R.V.I.S. şu an meşgul, lütfen birazdan tekrar deneyin.'
