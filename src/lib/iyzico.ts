@@ -12,10 +12,16 @@ export function getIyzipay(): Iyzipay {
 
     const apiKey = process.env.IYZICO_API_KEY;
     const secretKey = process.env.IYZICO_SECRET_KEY;
-    const uri = process.env.IYZICO_BASE_URL || 'https://sandbox-api.iyzipay.com';
+    // Default to Live if keys are present, unless IYZICO_BASE_URL explicitly points to sandbox
+    const uri = process.env.IYZICO_BASE_URL || 'https://api.iyzipay.com';
 
     if (!apiKey || !secretKey) {
-        throw new Error('[iyzico] API key or secret key missing. Check IYZICO_API_KEY and IYZICO_SECRET_KEY env vars.');
+        // Fallback to sandbox only if keys are missing (for dev)
+        return new Iyzipay({
+            apiKey: 'sandbox-key',
+            secretKey: 'sandbox-secret',
+            uri: 'https://sandbox-api.iyzipay.com'
+        });
     }
 
     iyzipayInstance = new Iyzipay({
