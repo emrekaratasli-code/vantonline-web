@@ -50,7 +50,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                     className="product-image object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
                     loading="lazy"
-                    onError={(e) => { (e.target as HTMLImageElement).src = '/images/placeholder-product.svg'; }}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/placeholder-product.svg'; }}
                 />
                 <div className="absolute inset-0 bg-vant-black/0 group-hover:bg-vant-black/10 transition-colors duration-500" />
                 {product.isOutOfStock && (

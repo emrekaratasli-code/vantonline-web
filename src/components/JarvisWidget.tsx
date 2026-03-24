@@ -51,7 +51,7 @@ export default function JarvisWidget() {
                 : "Great question. VANT collections are limited editions and each piece is part of a 'Protocol'. I can offer personalized style suggestions.";
                 
             setMessages(prev => [...prev, { role: 'bot', text: botResponse }]);
-        } catch (error) {
+        } catch (_error) {
             setMessages(prev => [...prev, { role: 'bot', text: 'Error connecting to J.A.R.V.I.S.' }]);
         } finally {
             setIsTyping(false);
@@ -80,7 +80,7 @@ export default function JarvisWidget() {
                         </div>
 
                         {/* Messages */}
-                        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+                        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
                             {messages.map((msg, i) => (
                                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[85%] p-3 text-sm ${

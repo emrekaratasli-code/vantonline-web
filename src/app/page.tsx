@@ -204,7 +204,7 @@ export default function HomePage() {
                             <div className="w-12 h-[1px] bg-vant-purple/50" />
                         </div>
                         <p className="mt-10 text-lg md:text-xl text-vant-light/80 font-body leading-relaxed max-w-2xl mx-auto italic">
-                            "{manifestoContent.text}"
+                            {`"${manifestoContent.text}"`}
                         </p>
                         {manifestoContent.question && (
                             <FadeIn delay={0.5} direction="up">
