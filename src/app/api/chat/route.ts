@@ -30,8 +30,14 @@ export async function POST(req: NextRequest) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
+        let targetUrl = BOT_API_URL.replace(/\/$/, '');
+        // If the user already included /api/chat in the URL, remove it to avoid /api/chat/api/chat
+        if (targetUrl.endsWith('/api/chat')) {
+            targetUrl = targetUrl.replace(/\/api\/chat$/, '');
+        }
+
         try {
-            const response = await fetch(`${BOT_API_URL.replace(/\/$/, '')}/api/chat`, {
+            const response = await fetch(`${targetUrl}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
