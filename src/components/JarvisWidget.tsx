@@ -60,11 +60,11 @@ export default function JarvisWidget() {
             } else {
                 throw new Error(data.error);
             }
-        } catch (_error) {
-            const errorMsg = lang === 'tr'
+        } catch (err: any) {
+            const errorMsg = err.message || (lang === 'tr'
                 ? 'J.A.R.V.I.S. şu an meşgul, lütfen birazdan tekrar deneyin.'
-                : 'J.A.R.V.I.S. is currently busy, please try again later.';
-            setMessages((prev: Message[]) => [...prev, { role: 'bot', text: errorMsg }]);
+                : 'J.A.R.V.I.S. is currently busy, please try again later.');
+            setMessages((prev: Message[]) => [...prev, { role: 'bot', text: `Error: ${errorMsg}` }]);
         } finally {
             setIsTyping(false);
         }
