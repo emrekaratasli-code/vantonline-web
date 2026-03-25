@@ -16,6 +16,7 @@ interface ShippingData {
     lastName: string;
     email: string;
     phone: string;
+    country: string;
     address: string;
     city: string;
     district: string;
@@ -42,6 +43,35 @@ type PaymentMethod = 'bank_transfer' | 'credit_card';
 type Step = 'shipping' | 'otp' | 'consent' | 'payment' | 'iyzico_form';
 
 const STEPS: Step[] = ['shipping', 'otp', 'consent', 'payment'];
+
+type ShippingCountry = {
+    code: string;
+    tr: string;
+    en: string;
+    cities: string[];
+};
+
+const SHIPPING_COUNTRIES: ShippingCountry[] = [
+    { code: 'TR', tr: 'Türkiye', en: 'Turkey', cities: ['Istanbul', 'Ankara', 'Izmir', 'Bursa', 'Antalya'] },
+    { code: 'DE', tr: 'Almanya', en: 'Germany', cities: ['Berlin', 'Munich', 'Hamburg', 'Frankfurt'] },
+    { code: 'NL', tr: 'Hollanda', en: 'Netherlands', cities: ['Amsterdam', 'Rotterdam', 'Utrecht'] },
+    { code: 'CH', tr: 'İsviçre', en: 'Switzerland', cities: ['Zurich', 'Geneva', 'Basel'] },
+    { code: 'SE', tr: 'İsveç', en: 'Sweden', cities: ['Stockholm', 'Gothenburg', 'Malmo'] },
+    { code: 'NO', tr: 'Norveç', en: 'Norway', cities: ['Oslo', 'Bergen', 'Trondheim'] },
+    { code: 'DK', tr: 'Danimarka', en: 'Denmark', cities: ['Copenhagen', 'Aarhus', 'Odense'] },
+    { code: 'AT', tr: 'Avusturya', en: 'Austria', cities: ['Vienna', 'Graz', 'Linz'] },
+    { code: 'BE', tr: 'Belçika', en: 'Belgium', cities: ['Brussels', 'Antwerp', 'Ghent'] },
+    { code: 'GB', tr: 'Birleşik Krallık', en: 'United Kingdom', cities: ['London', 'Manchester', 'Birmingham'] },
+    { code: 'IE', tr: 'İrlanda', en: 'Ireland', cities: ['Dublin', 'Cork', 'Galway'] },
+    { code: 'US', tr: 'Amerika Birleşik Devletleri', en: 'United States', cities: ['New York', 'Los Angeles', 'Miami'] },
+    { code: 'CA', tr: 'Kanada', en: 'Canada', cities: ['Toronto', 'Vancouver', 'Montreal'] },
+    { code: 'AU', tr: 'Avustralya', en: 'Australia', cities: ['Sydney', 'Melbourne', 'Brisbane'] },
+    { code: 'NZ', tr: 'Yeni Zelanda', en: 'New Zealand', cities: ['Auckland', 'Wellington', 'Christchurch'] },
+    { code: 'SG', tr: 'Singapur', en: 'Singapore', cities: ['Singapore'] },
+    { code: 'JP', tr: 'Japonya', en: 'Japan', cities: ['Tokyo', 'Osaka', 'Yokohama'] },
+    { code: 'AE', tr: 'Birleşik Arap Emirlikleri', en: 'United Arab Emirates', cities: ['Dubai', 'Abu Dhabi', 'Sharjah'] },
+    { code: 'QA', tr: 'Katar', en: 'Qatar', cities: ['Doha', 'Al Rayyan'] },
+];
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -79,7 +109,7 @@ export default function CheckoutPage() {
     // Shipping
     const [shipping, setShipping] = useState<ShippingData>({
         firstName: '', lastName: '', email: '', phone: '',
-        address: '', city: '', district: '', postalCode: '',
+        country: 'TR', address: '', city: '', district: '', postalCode: '',
     });
 
     // OTP
@@ -138,7 +168,7 @@ export default function CheckoutPage() {
         fetchSession();
     }, []);
 
-        useEffect(() => {
+    useEffect(() => {
         const city = shipping.city.trim();
         if (city.length < 2) {
             setShippingOptions([]);
@@ -187,6 +217,14 @@ export default function CheckoutPage() {
         };
     }, [shipping.city, lang]);
 
+    useEffect(() => {
+        const selectedCountry = SHIPPING_COUNTRIES.find((item) => item.code === shipping.country);
+        const allowedCities = selectedCountry?.cities ?? [];
+        if (shipping.city && !allowedCities.includes(shipping.city)) {
+            setShipping((prev) => ({ ...prev, city: '' }));
+        }
+    }, [shipping.country, shipping.city]);
+
 async function handleGoogleLogin() {
         setIsGoogleLoading(true);
         try {
@@ -220,6 +258,7 @@ async function handleGoogleLogin() {
         if (!shipping.email.trim()) e.email = t.checkout.required[lang];
         else if (!isValidEmail(shipping.email)) e.email = t.checkout.invalidEmail[lang];
         if (shipping.phone.trim() && !isValidPhone(shipping.phone)) e.phone = t.checkout.invalidPhone[lang];
+        if (!shipping.country.trim()) e.country = t.checkout.required[lang];
         if (!shipping.address.trim()) e.address = t.checkout.required[lang];
         if (!shipping.city.trim()) e.city = t.checkout.required[lang];
         setErrors(e);
@@ -436,6 +475,9 @@ async function handleGoogleLogin() {
     const inputCn = 'w-full bg-transparent border border-vant-light/10 px-4 py-3 text-sm text-vant-light font-body placeholder:text-vant-muted/40 focus:outline-none focus:border-vant-purple transition-colors';
     const labelCn = 'block text-xs font-heading uppercase tracking-wider text-vant-muted mb-2';
     const errorCn = 'text-xs text-red-400 mt-1';
+    const selectedCountry = SHIPPING_COUNTRIES.find((item) => item.code === shipping.country) ?? null;
+    const cityOptions = selectedCountry?.cities ?? [];
+    const selectPlaceholder = lang === 'tr' ? 'Seçiniz' : 'Select';
 
     function shippingField(key: keyof ShippingData, label: string, type = 'text', placeholder = '') {
         return (
@@ -449,6 +491,52 @@ async function handleGoogleLogin() {
                     className={inputCn}
                 />
                 {errors[key] && <p className={errorCn}>{errors[key]}</p>}
+            </div>
+        );
+    }
+
+    function shippingCountryField() {
+        return (
+            <div>
+                <label className={labelCn}>{lang === 'tr' ? 'Ülke' : 'Country'}</label>
+                <select
+                    value={shipping.country}
+                    onChange={(e) => {
+                        const nextCountry = e.target.value;
+                        setShipping((prev) => ({ ...prev, country: nextCountry, city: '' }));
+                    }}
+                    className={inputCn}
+                >
+                    <option value="">{selectPlaceholder}</option>
+                    {SHIPPING_COUNTRIES.map((country) => (
+                        <option key={country.code} value={country.code} className="bg-black text-white">
+                            {lang === 'tr' ? country.tr : country.en}
+                        </option>
+                    ))}
+                </select>
+                {errors.country && <p className={errorCn}>{errors.country}</p>}
+            </div>
+        );
+    }
+
+    function shippingCityField() {
+        return (
+            <div>
+                <label className={labelCn}>{t.checkout.city[lang]}</label>
+                <select
+                    value={shipping.city}
+                    onChange={(e) => setShipping((prev) => ({ ...prev, city: e.target.value }))}
+                    className={inputCn}
+                    disabled={!shipping.country}
+                >
+                    <option value="">{selectPlaceholder}</option>
+                    {cityOptions.map((city) => (
+                        <option key={city} value={city} className="bg-black text-white">
+                            {city}
+                        </option>
+                    ))}
+                </select>
+                {errors.city && <p className={errorCn}>{errors.city}</p>}
             </div>
         );
     }
@@ -522,10 +610,20 @@ async function handleGoogleLogin() {
                             </div>
                             {shippingField('email', t.checkout.email[lang], 'email')}
                             {shippingField('phone', lang === 'tr' ? 'Telefon (İsteğe Bağlı)' : 'Phone (Optional)', 'tel', t.checkout.phonePlaceholder[lang])}
-                            {shippingField('address', t.checkout.address[lang])}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {shippingField('city', t.checkout.city[lang])}
-                                {shippingField('district', t.checkout.district[lang])}
+                                {shippingCountryField()}
+                                {shippingCityField()}
+                            </div>
+                            <div>
+                                <label className={labelCn}>{lang === 'tr' ? 'Adres Detayı' : 'Address Detail'}</label>
+                                <textarea
+                                    value={shipping.address}
+                                    onChange={(e) => setShipping((prev) => ({ ...prev, address: e.target.value }))}
+                                    rows={4}
+                                    placeholder={lang === 'tr' ? 'Mahalle, cadde/sokak, bina no, daire no vb.' : 'Neighborhood, street, building no, apartment no, etc.'}
+                                    className={inputCn}
+                                />
+                                {errors.address && <p className={errorCn}>{errors.address}</p>}
                             </div>
                             <div className="pt-4">
                                 <button onClick={goNext} className="btn-primary w-full">
@@ -709,7 +807,8 @@ async function handleGoogleLogin() {
                                     <p className="text-sm text-vant-light/80 font-body">
                                         {shipping.firstName} {shipping.lastName}<br />
                                         {shipping.address}<br />
-                                        {shipping.district ? `${shipping.district}, ` : ''}{shipping.city}
+                                        {shipping.city}
+                                        {selectedCountry ? `, ${lang === 'tr' ? selectedCountry.tr : selectedCountry.en}` : ''}
                                     </p>
                                 </div>
 

@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
             city: string;
         } | null = null;
 
-        const fallbackCities = ['Diger', 'Di?er'];
+        const fallbackCities = ['Diger', 'Diğer'];
         const requestedCarrierId = String(shippingRate.carrierId);
 
         const { data: rateRows, error: rateError } = await serviceClient
@@ -207,6 +207,7 @@ export async function POST(req: NextRequest) {
             lastName: shipping.lastName,
             email: shipping.email || null,
             phone: customerPhone,
+            country: shipping.country || null,
             address: shipping.address,
             city: shipping.city,
             district: shipping.district || null,

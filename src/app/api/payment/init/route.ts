@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
             lastName?: string;
             address?: string;
             city?: string;
+            country?: string;
             email?: string;
             phone?: string;
             shippingTotal?: number;
@@ -73,6 +74,7 @@ export async function POST(req: NextRequest) {
         const buyerSurname = shippingAddress.lastName || shipping?.lastName || 'Soyad';
         const buyerAddress = shippingAddress.address || shipping?.address || 'Adres';
         const buyerCity = shippingAddress.city || shipping?.city || 'Istanbul';
+        const buyerCountry = shippingAddress.country || shipping?.country || 'Turkey';
         const buyerPhone = shippingAddress.phone || customerPhone || '+905000000000';
         const buyerEmail = shippingAddress.email || shipping?.email || 'musteri@vantonline.com';
 
@@ -113,13 +115,13 @@ export async function POST(req: NextRequest) {
             registrationAddress: buyerAddress,
             ip: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1',
             city: buyerCity,
-            country: 'Turkey',
+            country: buyerCountry,
         };
 
         const address = {
             contactName: `${buyerName} ${buyerSurname}`,
             city: buyerCity,
-            country: 'Turkey',
+            country: buyerCountry,
             address: buyerAddress,
         };
 
