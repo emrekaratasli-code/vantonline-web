@@ -130,6 +130,7 @@ export default function CheckoutPage() {
     const [agreementAccepted, setAgreementAccepted] = useState(false);
     const [orderLoading, setOrderLoading] = useState(false);
     const [orderError, setOrderError] = useState('');
+    const [showOrderItemsMobile, setShowOrderItemsMobile] = useState(false);
 
     const [shippingOptions, setShippingOptions] = useState<ShippingRateOption[]>([]);
     const [shippingLoading, setShippingLoading] = useState(false);
@@ -824,12 +825,48 @@ async function handleGoogleLogin() {
                 {currentStep === 'payment' && (
                     <div>
                         <div className="space-y-8">
+                            {/* Mobile compact summary */}
+                            <div className="md:hidden p-3 border border-vant-light/10 bg-vant-gray/20 space-y-2">
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="font-heading uppercase tracking-wider text-vant-muted">
+                                        {lang === 'tr' ? 'Ara Toplam' : 'Subtotal'}
+                                    </span>
+                                    <span className="text-vant-light">{formatPrice(cartTotal)}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="font-heading uppercase tracking-wider text-vant-muted">
+                                        {lang === 'tr' ? 'Kargo' : 'Shipping'}
+                                    </span>
+                                    <span className="text-vant-light">
+                                        {shippingLoading
+                                            ? (lang === 'tr' ? 'Hesaplaniyor...' : 'Calculating...')
+                                            : formatPrice(shippingTotal)}
+                                    </span>
+                                </div>
+                                <div className="pt-2 border-t border-vant-light/10 flex items-center justify-between">
+                                    <span className="font-heading uppercase tracking-wider text-vant-muted text-sm">
+                                        {t.cart.total[lang]}
+                                    </span>
+                                    <span className="font-heading text-vant-light text-lg">{formatPrice(payableTotal)}</span>
+                                </div>
+                            </div>
+
                             {/* Order summary */}
                             <div>
                                 <h2 className="font-heading text-sm uppercase tracking-wider text-vant-muted mb-4">
                                     {t.payment.orderSummary[lang]}
                                 </h2>
-                                <div className="space-y-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowOrderItemsMobile((prev) => !prev)}
+                                    className="md:hidden mb-3 w-full text-left text-xs font-heading uppercase tracking-wider text-vant-purple border border-vant-purple/30 px-3 py-2"
+                                >
+                                    {showOrderItemsMobile
+                                        ? (lang === 'tr' ? 'Ürünleri Gizle' : 'Hide Items')
+                                        : (lang === 'tr' ? 'Ürünleri Göster' : 'Show Items')}
+                                </button>
+
+                                <div className={`${showOrderItemsMobile ? 'block' : 'hidden'} md:block space-y-3`}>
                                     {cartItems.map((item) => (
                                         <div key={item.id} className="flex items-center gap-3 p-3 border border-vant-light/5">
                                             <div className="relative w-12 h-14 flex-shrink-0 bg-vant-gray overflow-hidden">
