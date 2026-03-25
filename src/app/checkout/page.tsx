@@ -250,6 +250,8 @@ async function handleGoogleLogin() {
     const stepIndex = currentStep === 'iyzico_form'
         ? STEPS.length // beyond last visible step
         : STEPS.indexOf(currentStep);
+    const currentVisibleStepNumber = Math.max(1, Math.min(STEPS.length, stepIndex + 1));
+    const progressPercent = Math.round((currentVisibleStepNumber / STEPS.length) * 100);
 
     /* ------- validation ------- */
     function validateShipping(): boolean {
@@ -564,6 +566,34 @@ async function handleGoogleLogin() {
                     {t.checkout.title[lang]}
                 </h1>
             </FadeIn>
+
+            {/* Mobile progress + total bar */}
+            {currentStep !== 'iyzico_form' && (
+                <div className="md:hidden sticky top-16 z-20 mb-4">
+                    <div className="border border-vant-light/10 bg-vant-black/85 backdrop-blur-sm px-3 py-2.5 rounded-sm">
+                        <div className="flex items-center justify-between text-[11px] font-heading uppercase tracking-wider text-vant-muted">
+                            <span>
+                                {lang === 'tr' ? `Adım ${currentVisibleStepNumber}/${STEPS.length}` : `Step ${currentVisibleStepNumber}/${STEPS.length}`}
+                            </span>
+                            <span>{progressPercent}%</span>
+                        </div>
+                        <div className="mt-2 h-1 w-full bg-vant-light/10 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-vant-purple transition-all duration-300"
+                                style={{ width: `${progressPercent}%` }}
+                            />
+                        </div>
+                        <div className="mt-2 flex items-center justify-between">
+                            <span className="text-[11px] font-heading uppercase tracking-wider text-vant-muted">
+                                {t.cart.total[lang]}
+                            </span>
+                            <span className="text-sm font-heading text-vant-light">
+                                {formatPrice(payableTotal)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Step indicator */}
             {currentStep !== 'iyzico_form' && (
