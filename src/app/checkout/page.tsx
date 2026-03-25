@@ -44,6 +44,7 @@ type Step = 'shipping' | 'otp' | 'consent' | 'payment' | 'iyzico_form';
 
 const STEPS: Step[] = ['shipping', 'otp', 'consent', 'payment'];
 const OTHER_CITY_VALUE = 'Diger';
+const CHECKOUT_DRAFT_KEY = 'vant_checkout_draft_v1';
 
 type ShippingCountry = {
     code: string;
@@ -167,6 +168,43 @@ export default function CheckoutPage() {
     const selectedShippingRate = shippingOptions[0] ?? null;
     const shippingTotal = selectedShippingRate?.price ?? 0;
     const payableTotal = cartTotal + shippingTotal;
+
+    // Restore checkout draft (shipping + consent + payment method)
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        try {
+            const raw = localStorage.getItem(CHECKOUT_DRAFT_KEY);
+            if (!raw) return;
+            const draft = JSON.parse(raw) as {
+                shipping?: Partial<ShippingData>;
+                consent?: Partial<ConsentData>;
+                paymentMethod?: PaymentMethod;
+            };
+
+            if (draft.shipping) {
+                setShipping((prev) => ({ ...prev, ...draft.shipping }));
+            }
+            if (draft.consent) {
+                setConsent((prev) => ({ ...prev, ...draft.consent }));
+            }
+            if (draft.paymentMethod === 'bank_transfer' || draft.paymentMethod === 'credit_card') {
+                setPaymentMethod(draft.paymentMethod);
+            }
+        } catch {
+            // ignore invalid draft payloads
+        }
+    }, []);
+
+    // Persist draft so users can continue later.
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const draft = {
+            shipping,
+            consent,
+            paymentMethod,
+        };
+        localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(draft));
+    }, [shipping, consent, paymentMethod]);
 
 
     // Fetch user session on mount
