@@ -152,6 +152,7 @@ export default function CheckoutPage() {
     const [orderLoading, setOrderLoading] = useState(false);
     const [orderError, setOrderError] = useState('');
     const [showOrderItemsMobile, setShowOrderItemsMobile] = useState(false);
+    const [oauthErrorMessage, setOauthErrorMessage] = useState('');
 
     const [shippingOptions, setShippingOptions] = useState<ShippingRateOption[]>([]);
     const [shippingLoading, setShippingLoading] = useState(false);
@@ -232,6 +233,26 @@ export default function CheckoutPage() {
         };
         fetchSession();
     }, []);
+
+    // Clean OAuth error query params and show a user-friendly message.
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const url = new URL(window.location.href);
+        const error = url.searchParams.get('error');
+        if (!error) return;
+        if (error !== 'server_error') return;
+
+        setOauthErrorMessage(
+            lang === 'tr'
+                ? 'Google girişinde geçici bir bağlantı sorunu oluştu. Lütfen tekrar deneyin.'
+                : 'A temporary connection issue occurred during Google sign-in. Please try again.',
+        );
+
+        url.searchParams.delete('error');
+        url.searchParams.delete('error_code');
+        url.searchParams.delete('error_description');
+        window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    }, [lang]);
 
     // Auto-suggest country from browser locale without locking user choice.
     useEffect(() => {
@@ -725,6 +746,11 @@ async function handleGoogleLogin() {
                         </div>
                         
                         <div className="space-y-4 md:space-y-5">
+                            {oauthErrorMessage && (
+                                <div className="p-3 border border-yellow-400/30 bg-yellow-400/5">
+                                    <p className="text-sm text-yellow-300 font-body">{oauthErrorMessage}</p>
+                                </div>
+                            )}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {shippingField('firstName', t.checkout.firstName[lang])}
                                 {shippingField('lastName', t.checkout.lastName[lang])}
