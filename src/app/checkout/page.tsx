@@ -473,8 +473,8 @@ async function handleGoogleLogin() {
     }
 
     /* ------- Input helper ------- */
-    const inputCn = 'w-full bg-transparent border border-vant-light/10 px-4 py-3 text-sm text-vant-light font-body placeholder:text-vant-muted/40 focus:outline-none focus:border-vant-purple transition-colors';
-    const labelCn = 'block text-xs font-heading uppercase tracking-wider text-vant-muted mb-2';
+    const inputCn = 'w-full bg-transparent border border-vant-light/10 px-4 py-3.5 text-base md:text-sm text-vant-light font-body placeholder:text-vant-muted/40 focus:outline-none focus:border-vant-purple transition-colors';
+    const labelCn = 'block text-[11px] md:text-xs font-heading uppercase tracking-wider text-vant-muted mb-2';
     const errorCn = 'text-xs text-red-400 mt-1';
     const selectedCountry = SHIPPING_COUNTRIES.find((item) => item.code === shipping.country) ?? null;
     const cityOptions = selectedCountry?.cities ?? [];
@@ -558,9 +558,9 @@ async function handleGoogleLogin() {
     };
 
     return (
-        <section className="container-vant py-12 md:py-20">
+        <section className="container-vant py-8 md:py-20 pb-24 md:pb-20">
             <FadeIn>
-                <h1 className="font-heading text-display font-bold uppercase tracking-tight text-center mb-8">
+                <h1 className="font-heading text-display font-bold uppercase tracking-tight text-center mb-6 md:mb-8">
                     {t.checkout.title[lang]}
                 </h1>
             </FadeIn>
@@ -568,21 +568,23 @@ async function handleGoogleLogin() {
             {/* Step indicator */}
             {currentStep !== 'iyzico_form' && (
                 <FadeIn delay={0.05}>
-                    <div className="flex items-center justify-center gap-2 mb-12 flex-wrap">
+                    <div className="mb-8 md:mb-12 overflow-x-auto no-scrollbar">
+                        <div className="flex items-center justify-start md:justify-center gap-2 min-w-max px-1">
                         {visibleSteps.map((s, i) => (
                             <div key={s} className="flex items-center gap-2">
-                                <div className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-heading uppercase tracking-wider transition-colors ${i <= stepIndex
+                                <div className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] md:text-xs font-heading uppercase tracking-wider whitespace-nowrap transition-colors ${i <= stepIndex
                                     ? 'text-vant-purple border border-vant-purple/40'
                                     : 'text-vant-muted/40 border border-vant-light/5'
                                     }`}>
                                     <span className="font-bold">{i + 1}</span>
-                                    <span className="hidden sm:inline">{stepLabels[s]}</span>
+                                    <span>{stepLabels[s]}</span>
                                 </div>
                                 {i < visibleSteps.length - 1 && (
                                     <div className={`w-6 h-[1px] ${i < stepIndex ? 'bg-vant-purple' : 'bg-vant-light/10'}`} />
                                 )}
                             </div>
                         ))}
+                    </div>
                     </div>
                 </FadeIn>
             )}
@@ -591,14 +593,14 @@ async function handleGoogleLogin() {
                 {/* =================== STEP 1: SHIPPING =================== */}
                 {currentStep === 'shipping' && (
                     <div>
-                        <div className="mb-8 p-6 border border-vant-purple/30 rounded bg-vant-dark/50 text-center">
+                        <div className="mb-6 md:mb-8 p-4 md:p-6 border border-vant-purple/30 rounded bg-vant-dark/50 text-center">
                             <p className="text-sm text-vant-muted font-body mb-4">
                                 {lang === 'tr' ? 'Vakit kaybetmeden devam etmek ister misiniz?' : 'Want to speed up checkout?'}
                             </p>
                             <button
                                 onClick={handleGoogleLogin}
                                 disabled={isGoogleLoading}
-                                className="inline-flex items-center justify-center gap-3 px-6 py-3 border border-vant-primary/30 rounded-sm hover:border-vant-purple transition-all bg-white text-black font-medium text-sm hover:opacity-90 disabled:opacity-50"
+                                className="inline-flex w-full sm:w-auto items-center justify-center gap-3 px-4 md:px-6 py-3 border border-vant-primary/30 rounded-sm hover:border-vant-purple transition-all bg-white text-black font-medium text-sm hover:opacity-90 disabled:opacity-50"
                             >
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -610,7 +612,7 @@ async function handleGoogleLogin() {
                             </button>
                         </div>
                         
-                        <div className="space-y-4">
+                        <div className="space-y-4 md:space-y-5">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {shippingField('firstName', t.checkout.firstName[lang])}
                                 {shippingField('lastName', t.checkout.lastName[lang])}
@@ -632,7 +634,7 @@ async function handleGoogleLogin() {
                                 />
                                 {errors.address && <p className={errorCn}>{errors.address}</p>}
                             </div>
-                            <div className="pt-4">
+                            <div className="pt-3 md:pt-4 sticky bottom-0 bg-vant-black/90 backdrop-blur-sm -mx-3 px-3 py-3 md:static md:bg-transparent md:backdrop-blur-0 md:mx-0 md:px-0 md:py-0">
                                 <button onClick={goNext} className="btn-primary w-full">
                                     {t.checkout.next[lang]}
                                 </button>
@@ -674,11 +676,11 @@ async function handleGoogleLogin() {
                                             placeholder="______"
                                         />
                                     </div>
-                                    <div className="flex items-center justify-center gap-4">
+                                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
                                         <button
                                             onClick={handleVerifyOtp}
                                             disabled={otpLoading || otpCode.length < 6}
-                                            className="btn-primary disabled:opacity-50"
+                                            className="btn-primary w-full sm:w-auto disabled:opacity-50"
                                         >
                                             {otpLoading ? '...' : t.otp.verify[lang]}
                                         </button>
@@ -706,14 +708,14 @@ async function handleGoogleLogin() {
                                 </p>
                             )}
 
-                            <div className="flex items-center justify-between pt-4">
-                                <button onClick={goBack} className="btn-secondary">
+                            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4">
+                                <button onClick={goBack} className="btn-secondary w-full sm:w-auto">
                                     {t.checkout.back[lang]}
                                 </button>
                                 <button
                                     onClick={goNext}
                                     disabled={!otpVerified}
-                                    className="btn-primary disabled:opacity-30 disabled:cursor-not-allowed"
+                                    className="btn-primary w-full sm:w-auto disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
                                     {t.checkout.next[lang]}
                                 </button>
@@ -764,11 +766,11 @@ async function handleGoogleLogin() {
                                 </p>
                             </div>
 
-                            <div className="flex items-center justify-between pt-4">
-                                <button onClick={goBack} className="btn-secondary">
+                            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4">
+                                <button onClick={goBack} className="btn-secondary w-full sm:w-auto">
                                     {t.checkout.back[lang]}
                                 </button>
-                                <button onClick={goNext} className="btn-primary">
+                                <button onClick={goNext} className="btn-primary w-full sm:w-auto">
                                     {t.checkout.next[lang]}
                                 </button>
                             </div>
@@ -1019,14 +1021,14 @@ async function handleGoogleLogin() {
                             )}
 
                             {/* Actions */}
-                            <div className="flex items-center justify-between pt-4">
-                                <button onClick={goBack} className="btn-secondary">
+                            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4">
+                                <button onClick={goBack} className="btn-secondary w-full sm:w-auto">
                                     {t.checkout.back[lang]}
                                 </button>
                                 <button
                                     onClick={handlePlaceOrder}
                                     disabled={!agreementAccepted || orderLoading || shippingLoading || !selectedShippingRate}
-                                    className="btn-primary disabled:opacity-30 disabled:cursor-not-allowed"
+                                    className="btn-primary w-full sm:w-auto disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
                                     {orderLoading
                                         ? (lang === 'tr' ? 'İşleniyor...' : 'Processing...')
@@ -1070,7 +1072,7 @@ async function handleGoogleLogin() {
 
                             {/* Back button */}
                             <div className="pt-4">
-                                <button onClick={goBack} className="btn-secondary">
+                                <button onClick={goBack} className="btn-secondary w-full sm:w-auto">
                                     {lang === 'tr' ? '← Geri Dön' : '← Go Back'}
                                 </button>
                             </div>
