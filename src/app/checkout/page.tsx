@@ -74,6 +74,26 @@ const SHIPPING_COUNTRIES: ShippingCountry[] = [
     { code: 'QA', tr: 'Katar', en: 'Qatar', cities: ['Doha', 'Al Rayyan'] },
 ];
 
+function detectCountryFromBrowser(): string | null {
+    if (typeof window === 'undefined') return null;
+
+    const locales = [
+        ...(navigator.languages || []),
+        navigator.language,
+        Intl.DateTimeFormat().resolvedOptions().locale,
+    ].filter(Boolean);
+
+    const supportedCodes = new Set(SHIPPING_COUNTRIES.map((item) => item.code));
+
+    for (const locale of locales) {
+        const parts = locale.replace('_', '-').split('-');
+        const region = (parts[1] || '').toUpperCase();
+        if (region && supportedCodes.has(region)) return region;
+    }
+
+    return null;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
@@ -173,6 +193,16 @@ export default function CheckoutPage() {
             }
         };
         fetchSession();
+    }, []);
+
+    // Auto-suggest country from browser locale without locking user choice.
+    useEffect(() => {
+        const detected = detectCountryFromBrowser();
+        if (!detected || detected === 'TR') return;
+        setShipping((prev) => {
+            if (prev.country && prev.country !== 'TR') return prev;
+            return { ...prev, country: detected, city: '' };
+        });
     }, []);
 
     useEffect(() => {
