@@ -295,7 +295,8 @@ export default function CheckoutPage() {
     useEffect(() => {
         const selectedCountry = SHIPPING_COUNTRIES.find((item) => item.code === shipping.country);
         const allowedCities = selectedCountry?.cities ?? [];
-        if (shipping.city && !allowedCities.includes(shipping.city)) {
+        const isOtherSelected = shipping.city === OTHER_CITY_VALUE;
+        if (shipping.city && !allowedCities.includes(shipping.city) && !isOtherSelected) {
             setShipping((prev) => ({ ...prev, city: '' }));
         }
     }, [shipping.country, shipping.city]);
