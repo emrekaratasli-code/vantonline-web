@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import './globals.css';
 import ClientLayout from '@/components/ClientLayout';
 
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
         icon: '/images/logo-crown.png',
         apple: '/images/logo-crown.png',
     },
-    description: 'VANT — Purple Slash koleksiyonu. Sınırlı üretim, cesur tasarım. Türkiye geneli ücretsiz kargo. Hatırlanmak için giyinmek.',
+    description: 'VANT — Purple Slash koleksiyonu. Sınırlı üretim, cesur tasarım. Kargo ücreti teslimat adresine göre ödeme adımında hesaplanır. Hatırlanmak için giyinmek.',
     keywords: ['streetwear', 'türk tasarım', 'sınırlı üretim', 'oversize', 'VANT', 'purple slash', 'sokak modası', 'wearable art'],
     authors: [{ name: 'VANT' }],
     creator: 'VANT',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
         url: baseUrl,
         siteName: 'VANT',
         title: 'VANT — Wearable Art / Streetwear',
-        description: 'Purple Slash koleksiyonu. Sınırlı üretim, cesur tasarım. Türkiye geneli ücretsiz kargo.',
+        description: 'Purple Slash koleksiyonu. Sınırlı üretim, cesur tasarım. Kargo ücreti teslimat adresine göre ödeme adımında hesaplanır.',
         images: [
             {
                 url: '/og-image.jpg',
@@ -112,6 +112,7 @@ fbq('track', 'PageView');
                             }}
                         />
                         <noscript>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img height="1" width="1" style={{ display: 'none' }}
                                 src={`https://www.facebook.com/tr?id=${process.env.NEXT_PUBLIC_FB_PIXEL_ID}&ev=PageView&noscript=1`}
                                 alt=""
@@ -127,3 +128,5 @@ fbq('track', 'PageView');
         </html>
     );
 }
+
+

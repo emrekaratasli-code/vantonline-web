@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,15 +13,13 @@ export default function JarvisWidget() {
     const [isTyping, setIsTyping] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // Initial greeting
+    // Initial greeting (preserve existing messages; only seed once)
     useEffect(() => {
-        const greeting = lang === 'tr' 
+        const greeting = lang === 'tr'
             ? 'Merhaba, ben J.A.R.V.I.S. VANT Art Protokolü hakkında sormak istediğiniz bir şey var mı?'
             : 'Hello, I am J.A.R.V.I.S. Do you have any questions about the VANT Art Protocol?';
-        
-        if (messages.length === 0) {
-            setMessages([{ role: 'bot', text: greeting }]);
-        }
+
+        setMessages((prev) => (prev.length === 0 ? [{ role: 'bot', text: greeting }] : prev));
     }, [lang]);
 
     useEffect(() => {
@@ -153,3 +151,4 @@ export default function JarvisWidget() {
         </div>
     );
 }
+

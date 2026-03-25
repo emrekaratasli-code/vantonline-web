@@ -28,13 +28,13 @@ const siteInfo = {
         title: { tr: 'Kargo Bilgileri', en: 'Shipping Information' },
         details: {
             tr: [
-                'Türkiye genelinde ücretsiz kargo.',
+                'Kargo ücreti teslimat adresine göre ödeme adımında otomatik hesaplanır.',
                 'Siparişler 1-3 iş günü içinde kargoya verilir.',
                 'Tahmini teslimat süresi: 2-5 iş günü.',
                 'Kargo takip numarası e-posta ile gönderilir.',
             ],
             en: [
-                'Free shipping across Turkey.',
+                'Shipping fee is calculated at checkout based on the delivery address.',
                 'Orders are shipped within 1-3 business days.',
                 'Estimated delivery time: 2-5 business days.',
                 'Tracking number will be sent via email.',

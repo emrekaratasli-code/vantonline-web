@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase';
 
 type PaymentMethod = 'bank_transfer' | 'credit_card';
@@ -16,7 +16,7 @@ type CreateOrderItemInput = {
 /* ------------------------------------------------------------------ */
 export async function POST(req: NextRequest) {
     try {
-        const { shipping, cartItems, customerPhone, paymentMethod } = await req.json();
+        const { shipping, cartItems, customerPhone, paymentMethod, shippingRate, shippingTotal, grandTotal } = await req.json();
 
         const resolvedPaymentMethod: PaymentMethod =
             paymentMethod === 'bank_transfer' || paymentMethod === 'credit_card'
@@ -33,6 +33,10 @@ export async function POST(req: NextRequest) {
 
         if (!shipping.firstName || !shipping.lastName || !shipping.address || !shipping.city) {
             return NextResponse.json({ error: 'Missing shipping fields.' }, { status: 400 });
+        }
+
+        if (!shippingRate || !shippingRate.carrierId) {
+            return NextResponse.json({ error: 'Shipping rate is required.' }, { status: 400 });
         }
 
         const serviceClient = createServiceRoleClient();
@@ -115,6 +119,57 @@ export async function POST(req: NextRequest) {
             0,
         );
 
+        let shippingFee = 0;
+        let resolvedShippingRate: {
+            carrierId: string;
+            carrierName: string;
+            price: number;
+            estimatedDays: string | null;
+            city: string;
+        } | null = null;
+
+        const fallbackCities = ['Diger', 'Di?er'];
+        const requestedCarrierId = String(shippingRate.carrierId);
+
+        const { data: rateRows, error: rateError } = await serviceClient
+            .from('shipping_rates')
+            .select('price, city, estimated_days, carrier:shipping_carriers!carrier_id(id, name, is_active)')
+            .eq('is_active', true)
+            .eq('carrier_id', requestedCarrierId)
+            .in('city', [shipping.city, ...fallbackCities]);
+
+        if (rateError || !rateRows || rateRows.length === 0) {
+            return NextResponse.json({ error: 'Shipping rate not found.' }, { status: 409 });
+        }
+
+        const exactRate = rateRows.find((row: any) => row.city === shipping.city);
+        const fallbackRate = rateRows.find((row: any) => fallbackCities.includes(row.city));
+        const chosenRate = exactRate || fallbackRate;
+        const chosenCarrier = Array.isArray(chosenRate?.carrier)
+            ? chosenRate.carrier[0]
+            : chosenRate?.carrier;
+
+        if (!chosenRate || !chosenCarrier || chosenCarrier.is_active === false) {
+            return NextResponse.json({ error: 'Selected carrier is not available.' }, { status: 409 });
+        }
+
+        shippingFee = Number(chosenRate.price || 0);
+        resolvedShippingRate = {
+            carrierId: String(chosenCarrier.id),
+            carrierName: chosenCarrier.name,
+            price: shippingFee,
+            estimatedDays: chosenRate.estimated_days || null,
+            city: chosenRate.city,
+        };
+
+        const expectedGrandTotal = calculatedTotal + shippingFee;
+        if (Number.isFinite(Number(shippingTotal)) && Number(shippingTotal) !== shippingFee) {
+            return NextResponse.json({ error: 'Shipping total mismatch.' }, { status: 409 });
+        }
+        if (Number.isFinite(Number(grandTotal)) && Number(grandTotal) !== expectedGrandTotal) {
+            return NextResponse.json({ error: 'Grand total mismatch.' }, { status: 409 });
+        }
+
         const normalizedEmail = shipping.email?.toLowerCase().trim();
         let customerId = null;
 
@@ -156,6 +211,10 @@ export async function POST(req: NextRequest) {
             city: shipping.city,
             district: shipping.district || null,
             postalCode: shipping.postalCode || null,
+            shippingRate: resolvedShippingRate,
+            shippingTotal: shippingFee,
+            itemsTotal: calculatedTotal,
+            grandTotal: calculatedTotal + shippingFee,
         };
 
         const { data: order, error: orderError } = await serviceClient
@@ -165,7 +224,7 @@ export async function POST(req: NextRequest) {
                 status: 'pending',
                 shipping_address: shippingAddress,
                 payment_method: resolvedPaymentMethod,
-                total: calculatedTotal,
+                total: calculatedTotal + shippingFee,
                 currency: 'TRY',
             })
             .select('id')

@@ -52,10 +52,6 @@ export async function POST(req: NextRequest) {
             0,
         );
 
-        if (calculatedTotal <= 0 || calculatedTotal !== order.total) {
-            return NextResponse.json({ error: 'Order total mismatch.' }, { status: 409 });
-        }
-
         const shippingAddress = (order.shipping_address as {
             firstName?: string;
             lastName?: string;
@@ -63,7 +59,15 @@ export async function POST(req: NextRequest) {
             city?: string;
             email?: string;
             phone?: string;
+            shippingTotal?: number;
         } | null) ?? {};
+
+        const shippingFee = Number(shippingAddress.shippingTotal ?? 0);
+        const payableTotal = calculatedTotal + (Number.isFinite(shippingFee) ? shippingFee : 0);
+
+        if (payableTotal <= 0 || payableTotal !== order.total) {
+            return NextResponse.json({ error: 'Order total mismatch.' }, { status: 409 });
+        }
 
         const buyerName = shippingAddress.firstName || shipping?.firstName || 'Ad';
         const buyerSurname = shippingAddress.lastName || shipping?.lastName || 'Soyad';
@@ -79,7 +83,7 @@ export async function POST(req: NextRequest) {
         const host = req.headers.get('host') || 'localhost:3000';
         const baseUrl = configuredBaseUrl || `${protocol}://${host}`;
 
-        const priceStr = (calculatedTotal / 100).toFixed(2);
+        const priceStr = (payableTotal / 100).toFixed(2);
 
         const basketItems = orderItems.map((item, index: number) => ({
             id: item.product_id || `item_${index}`,
@@ -88,6 +92,16 @@ export async function POST(req: NextRequest) {
             itemType: Iyzipay.BASKET_ITEM_TYPE.PHYSICAL,
             price: (((item.unit_price ?? 0) * (item.quantity ?? 0)) / 100).toFixed(2),
         }));
+
+        if (shippingFee > 0) {
+            basketItems.push({
+                id: 'shipping_fee',
+                name: 'Shipping',
+                category1: 'Shipping',
+                itemType: Iyzipay.BASKET_ITEM_TYPE.PHYSICAL,
+                price: (shippingFee / 100).toFixed(2),
+            });
+        }
 
         const buyer = {
             id: buyerPhone,

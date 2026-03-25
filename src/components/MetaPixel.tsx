@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
@@ -35,6 +35,7 @@ export default function MetaPixel() {
                 }}
             />
             <noscript>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                     height="1"
                     width="1"
@@ -46,3 +47,5 @@ export default function MetaPixel() {
         </>
     );
 }
+
+

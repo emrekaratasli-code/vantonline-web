@@ -1,6 +1,7 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/lib/i18n';
 import ProductCard from '@/components/ProductCard';
@@ -85,11 +86,14 @@ export default function HomePage() {
                                 className="absolute inset-0 w-full h-full object-cover"
                             />
                         ) : (
-                            <img
+                            <Image
                                 src={media.src}
                                 alt=""
-                                className="absolute inset-0 w-full h-full object-cover"
+                                fill
+                                sizes="100vw"
+                                className="object-cover"
                                 style={{ objectPosition: '70% 30%' }}
+                                priority={index === 0}
                             />
                         )}
                     </div>
@@ -234,3 +238,5 @@ export default function HomePage() {
         </>
     );
 }
+
+

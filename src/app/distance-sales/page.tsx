@@ -23,7 +23,7 @@ const sections = [
         content: [
             'Ürünler, sipariş onayından sonra 1–3 iş günü içinde kargoya verilir.',
             'Tahmini teslimat süresi 2–5 iş günüdür.',
-            'Türkiye genelinde ücretsiz kargo uygulanır.',
+            'Kargo ücreti teslimat adresine göre ödeme adımında otomatik hesaplanır.',
         ],
     },
     {

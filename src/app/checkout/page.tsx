@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -25,6 +25,16 @@ interface ShippingData {
 interface ConsentData {
     marketingSms: boolean;
     marketingEmail: boolean;
+}
+
+interface ShippingRateOption {
+    carrierId: string;
+    carrierName: string;
+    carrierLogo: string | null;
+    sortOrder: number;
+    price: number;
+    estimatedDays: string | null;
+    city: string;
 }
 
 type PaymentMethod = 'bank_transfer' | 'credit_card';
@@ -89,6 +99,10 @@ export default function CheckoutPage() {
     const [orderLoading, setOrderLoading] = useState(false);
     const [orderError, setOrderError] = useState('');
 
+    const [shippingOptions, setShippingOptions] = useState<ShippingRateOption[]>([]);
+    const [shippingLoading, setShippingLoading] = useState(false);
+    const [shippingError, setShippingError] = useState('');
+
     // iyzico checkout form
     const [iyzicoFormHtml, setIyzicoFormHtml] = useState('');
     const iyzicoFormRef = useRef<HTMLDivElement>(null);
@@ -96,6 +110,11 @@ export default function CheckoutPage() {
     /** Format kuruş → TRY */
     const formatPrice = (kuruş: number) =>
         `${t.product.currency[lang]}${(kuruş / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
+
+    const selectedShippingRate = shippingOptions[0] ?? null;
+    const shippingTotal = selectedShippingRate?.price ?? 0;
+    const payableTotal = cartTotal + shippingTotal;
+
 
     // Fetch user session on mount
     useEffect(() => {
@@ -119,7 +138,56 @@ export default function CheckoutPage() {
         fetchSession();
     }, []);
 
-    async function handleGoogleLogin() {
+        useEffect(() => {
+        const city = shipping.city.trim();
+        if (city.length < 2) {
+            setShippingOptions([]);
+            setShippingError('');
+            setShippingLoading(false);
+            return;
+        }
+
+        const controller = new AbortController();
+        const timer = setTimeout(async () => {
+            try {
+                setShippingLoading(true);
+                setShippingError('');
+
+                const res = await fetch(`/api/shipping/rates?city=${encodeURIComponent(city)}`, {
+                    signal: controller.signal,
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    setShippingOptions([]);
+                    setShippingError(data?.error || 'Shipping rates could not be loaded.');
+                    return;
+                }
+
+                const options = Array.isArray(data?.carriers) ? data.carriers : [];
+                if (options.length === 0) {
+                    setShippingOptions([]);
+                    setShippingError(lang === 'tr' ? 'Bu sehir icin aktif kargo secenegi bulunamadi.' : 'No active shipping options for this city.');
+                    return;
+                }
+
+                setShippingOptions(options);
+            } catch (err) {
+                if ((err as Error).name === 'AbortError') return;
+                setShippingOptions([]);
+                setShippingError(lang === 'tr' ? 'Kargo fiyatlari alinamadi.' : 'Shipping rates could not be loaded.');
+            } finally {
+                setShippingLoading(false);
+            }
+        }, 350);
+
+        return () => {
+            clearTimeout(timer);
+            controller.abort();
+        };
+    }, [shipping.city, lang]);
+
+async function handleGoogleLogin() {
         setIsGoogleLoading(true);
         try {
             const { createBrowserSupabaseClient } = await import('@/lib/supabase');
@@ -273,6 +341,11 @@ export default function CheckoutPage() {
         if (!agreementAccepted) return;
         setOrderLoading(true);
         setOrderError('');
+
+        if (!selectedShippingRate) {
+            setOrderError(lang === 'tr' ? 'Kargo secenegi bulunamadi.' : 'No shipping option found.');
+            return;
+        }
         try {
             // Step 1: Create order in Supabase
             const orderRes = await fetch('/api/orders/create', {
@@ -289,6 +362,15 @@ export default function CheckoutPage() {
                         price: item.price,
                     })),
                     cartTotal,
+                    shippingTotal,
+                    grandTotal: payableTotal,
+                    shippingRate: {
+                        carrierId: selectedShippingRate.carrierId,
+                        carrierName: selectedShippingRate.carrierName,
+                        price: selectedShippingRate.price,
+                        estimatedDays: selectedShippingRate.estimatedDays,
+                        resolvedCity: selectedShippingRate.city,
+                    },
                     customerPhone: toE164(shipping.phone),
                     paymentMethod,
                 }),
@@ -631,13 +713,33 @@ export default function CheckoutPage() {
                                     </p>
                                 </div>
 
-                                <div className="flex items-center justify-between mt-4 pt-4 border-t border-vant-light/5">
-                                    <span className="font-heading text-sm uppercase tracking-wider text-vant-muted">
-                                        {t.cart.total[lang]}
-                                    </span>
-                                    <span className="font-heading text-xl text-vant-light">
-                                        {formatPrice(cartTotal)}
-                                    </span>
+                                <div className="mt-4 pt-4 border-t border-vant-light/5 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-heading text-xs uppercase tracking-wider text-vant-muted">
+                                            {lang === 'tr' ? 'Ara Toplam' : 'Subtotal'}
+                                        </span>
+                                        <span className="text-sm text-vant-light">
+                                            {formatPrice(cartTotal)}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-heading text-xs uppercase tracking-wider text-vant-muted">
+                                            {lang === 'tr' ? 'Kargo' : 'Shipping'}
+                                        </span>
+                                        <span className="text-sm text-vant-light">
+                                            {shippingLoading
+                                                ? (lang === 'tr' ? 'Hesaplaniyor...' : 'Calculating...')
+                                                : formatPrice(shippingTotal)}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-2 border-t border-vant-light/10">
+                                        <span className="font-heading text-sm uppercase tracking-wider text-vant-muted">
+                                            {t.cart.total[lang]}
+                                        </span>
+                                        <span className="font-heading text-xl text-vant-light">
+                                            {formatPrice(payableTotal)}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -740,18 +842,33 @@ export default function CheckoutPage() {
                                 </div>
                             )}
 
-                            {/* Free shipping badge */}
-                            <div className="flex items-center gap-3 p-3 border border-green-500/20 bg-green-500/5">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-green-400 flex-shrink-0">
-                                    <path d="M3.375 4.5C2.339 4.5 1.5 5.34 1.5 6.375V13.5h1.218c.252-.443.592-.83 1-.14a3.72 3.72 0 011.657-.388c.637 0 1.233.164 1.758.463.195.112.376.24.54.385h5.154c.164-.145.345-.273.54-.385a3.688 3.688 0 011.758-.463c.637 0 1.218.149 1.727.406.396.2.725.472 1.003.797H21V7.5a3 3 0 00-3-3H3.375z" />
+                            {/* Shipping status */}
+                            <div className={`flex items-center gap-3 p-3 border ${selectedShippingRate ? 'border-green-500/20 bg-green-500/5' : 'border-yellow-500/20 bg-yellow-500/5'}`}>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-5 h-5 flex-shrink-0 ${selectedShippingRate ? 'text-green-400' : 'text-yellow-400'}`}>
+                                    <path d="M1.5 3.75A2.25 2.25 0 013.75 1.5h9A2.25 2.25 0 0115 3.75v9A2.25 2.25 0 0112.75 15H9.258a3.75 3.75 0 11-7.016 0H1.5V3.75zM3.75 15a2.25 2.25 0 100 4.5 2.25 2.25 0 000-4.5zM15.75 6a.75.75 0 01.75-.75h2.379a2.25 2.25 0 011.59.659l1.372 1.371c.422.422.659.995.659 1.591V15a.75.75 0 01-.75.75h-1.516a3.75 3.75 0 00-7.016 0H12a.75.75 0 01-.75-.75V6.75z" />
                                     <path fillRule="evenodd" d="M5.375 16.5a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zm0-1.5a.75.75 0 100-1.5.75.75 0 000 1.5zM15.375 16.5a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zm0-1.5a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
                                 </svg>
-                                <span className="text-sm text-green-400 font-heading uppercase tracking-wider">
-                                    {lang === 'tr' ? 'Ücretsiz Kargo' : 'Free Shipping'}
-                                </span>
+                                <div className="text-sm font-body">
+                                    {shippingLoading && (lang === 'tr' ? 'Kargo hesaplanıyor...' : 'Calculating shipping...')}
+                                    {!shippingLoading && selectedShippingRate && (
+                                        <>
+                                            <span className="text-green-400 font-heading uppercase tracking-wider">
+                                                {selectedShippingRate.carrierName}
+                                            </span>
+                                            <span className="text-vant-light/80">
+                                                {' · '}{formatPrice(shippingTotal)}
+                                                {selectedShippingRate.estimatedDays ? ` · ${selectedShippingRate.estimatedDays}` : ''}
+                                            </span>
+                                        </>
+                                    )}
+                                    {!shippingLoading && !selectedShippingRate && (
+                                        <span className="text-yellow-400">
+                                            {shippingError || (lang === 'tr' ? 'Kargo secenegi bulunamadi.' : 'Shipping option unavailable.')}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
 
-                            {/* Distance sales agreement */}
                             <label className="flex items-start gap-3 cursor-pointer group">
                                 <input
                                     type="checkbox"
@@ -762,14 +879,22 @@ export default function CheckoutPage() {
                                 <span className="text-sm text-vant-light/80 font-body group-hover:text-vant-purple transition-colors">
                                     {lang === 'tr' ? (
                                         <>
+                                            <Link href="/preliminary-info" target="_blank" className="text-vant-purple underline">
+                                                Ön Bilgilendirme Formu
+                                            </Link>
+                                            {' ve '}
                                             <Link href="/distance-sales" target="_blank" className="text-vant-purple underline">
                                                 Mesafeli Satış Sözleşmesi
                                             </Link>
-                                            {`'yi okudum ve kabul ediyorum.`}
+                                            {`'ni okudum ve kabul ediyorum.`}
                                         </>
                                     ) : (
                                         <>
                                             I have read and accept the{' '}
+                                            <Link href="/preliminary-info" target="_blank" className="text-vant-purple underline">
+                                                Preliminary Information Form
+                                            </Link>
+                                            {' and '}
                                             <Link href="/distance-sales" target="_blank" className="text-vant-purple underline">
                                                 Distance Sales Agreement
                                             </Link>.
@@ -792,7 +917,7 @@ export default function CheckoutPage() {
                                 </button>
                                 <button
                                     onClick={handlePlaceOrder}
-                                    disabled={!agreementAccepted || orderLoading}
+                                    disabled={!agreementAccepted || orderLoading || shippingLoading || !selectedShippingRate}
                                     className="btn-primary disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
                                     {orderLoading
@@ -848,3 +973,6 @@ export default function CheckoutPage() {
         </section>
     );
 }
+
+
+
