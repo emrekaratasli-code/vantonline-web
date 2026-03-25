@@ -7,15 +7,19 @@ import { NextRequest, NextResponse } from 'next/server';
  * Force rebuild to pick up new env vars.
  */
 
-const BOT_API_URL = process.env.CHATBOT_API_URL;
+const BOT_API_URL =
+    process.env.CHATBOT_API_URL ||
+    process.env.JARVIS_BOT_URL ||
+    process.env.NEXT_PUBLIC_CHATBOT_API_URL ||
+    '';
 
 export async function POST(req: NextRequest) {
     try {
         if (!BOT_API_URL) {
-            console.error('[chatbot_proxy] CHATBOT_API_URL is not defined in environment variables.');
+            console.error('[chatbot_proxy] Missing bot URL. Define CHATBOT_API_URL (or JARVIS_BOT_URL).');
             return NextResponse.json({ 
                 ok: false, 
-                error: 'Chatbot configuration missing (CHATBOT_API_URL)' 
+                error: 'Chat service is not configured yet.' 
             }, { status: 500 });
         }
 
