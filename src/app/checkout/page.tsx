@@ -43,6 +43,7 @@ type PaymentMethod = 'bank_transfer' | 'credit_card';
 type Step = 'shipping' | 'otp' | 'consent' | 'payment' | 'iyzico_form';
 
 const STEPS: Step[] = ['shipping', 'otp', 'consent', 'payment'];
+const OTHER_CITY_VALUE = 'Diger';
 
 type ShippingCountry = {
     code: string;
@@ -478,6 +479,7 @@ async function handleGoogleLogin() {
     const selectedCountry = SHIPPING_COUNTRIES.find((item) => item.code === shipping.country) ?? null;
     const cityOptions = selectedCountry?.cities ?? [];
     const selectPlaceholder = lang === 'tr' ? 'Seçiniz' : 'Select';
+    const displayCity = shipping.city === OTHER_CITY_VALUE ? (lang === 'tr' ? 'Diğer' : 'Other') : shipping.city;
 
     function shippingField(key: keyof ShippingData, label: string, type = 'text', placeholder = '') {
         return (
@@ -535,6 +537,11 @@ async function handleGoogleLogin() {
                             {city}
                         </option>
                     ))}
+                    {!cityOptions.includes(OTHER_CITY_VALUE) && (
+                        <option value={OTHER_CITY_VALUE} className="bg-black text-white">
+                            {lang === 'tr' ? 'Diğer' : 'Other'}
+                        </option>
+                    )}
                 </select>
                 {errors.city && <p className={errorCn}>{errors.city}</p>}
             </div>
@@ -807,7 +814,7 @@ async function handleGoogleLogin() {
                                     <p className="text-sm text-vant-light/80 font-body">
                                         {shipping.firstName} {shipping.lastName}<br />
                                         {shipping.address}<br />
-                                        {shipping.city}
+                                        {displayCity}
                                         {selectedCountry ? `, ${lang === 'tr' ? selectedCountry.tr : selectedCountry.en}` : ''}
                                     </p>
                                 </div>
