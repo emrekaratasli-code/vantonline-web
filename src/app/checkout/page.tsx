@@ -120,6 +120,7 @@ export default function CheckoutPage() {
     const [otpLoading, setOtpLoading] = useState(false);
     const [otpMessage, setOtpMessage] = useState('');
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+    const [skipVerificationSteps, setSkipVerificationSteps] = useState(false);
 
     // Consent
     const [consent, setConsent] = useState<ConsentData>({ marketingSms: false, marketingEmail: false });
@@ -157,6 +158,7 @@ export default function CheckoutPage() {
             const { data } = await supabase.auth.getSession();
             if (data.session?.user) {
                 const user = data.session.user;
+                const provider = user.app_metadata?.provider;
                 setShipping(prev => ({
                     ...prev,
                     email: user.email || prev.email,
@@ -164,6 +166,9 @@ export default function CheckoutPage() {
                     lastName: user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || prev.lastName,
                 }));
                 setOtpVerified(true);
+                if (provider === 'google') {
+                    setSkipVerificationSteps(true);
+                }
             }
         };
         fetchSession();
@@ -246,12 +251,14 @@ async function handleGoogleLogin() {
     }
 
     /* ------- step index ------- */
-    const visibleSteps = STEPS;
+    const visibleSteps = skipVerificationSteps
+        ? (['shipping', 'payment'] as Step[])
+        : STEPS;
     const stepIndex = currentStep === 'iyzico_form'
-        ? STEPS.length // beyond last visible step
-        : STEPS.indexOf(currentStep);
-    const currentVisibleStepNumber = Math.max(1, Math.min(STEPS.length, stepIndex + 1));
-    const progressPercent = Math.round((currentVisibleStepNumber / STEPS.length) * 100);
+        ? visibleSteps.length // beyond last visible step
+        : visibleSteps.indexOf(currentStep);
+    const currentVisibleStepNumber = Math.max(1, Math.min(visibleSteps.length, stepIndex + 1));
+    const progressPercent = Math.round((currentVisibleStepNumber / visibleSteps.length) * 100);
 
     /* ------- validation ------- */
     function validateShipping(): boolean {
@@ -332,14 +339,19 @@ async function handleGoogleLogin() {
         if (currentStep === 'shipping' && !validateShipping()) return;
         if (currentStep === 'otp' && !otpVerified) return;
 
+        if (currentStep === 'shipping' && skipVerificationSteps) {
+            setCurrentStep('payment');
+            return;
+        }
+
         if (currentStep === 'shipping' && otpVerified) {
             setCurrentStep('consent');
             return;
         }
 
-        const currentIdx = STEPS.indexOf(currentStep);
+        const currentIdx = visibleSteps.indexOf(currentStep);
         const nextIdx = currentIdx + 1;
-        if (nextIdx < STEPS.length) setCurrentStep(STEPS[nextIdx]);
+        if (nextIdx < visibleSteps.length) setCurrentStep(visibleSteps[nextIdx]);
     }
 
     function goBack() {
@@ -349,14 +361,14 @@ async function handleGoogleLogin() {
             return;
         }
 
-        if (currentStep === 'consent' && otpVerified) {
+        if (currentStep === 'consent' && otpVerified && !skipVerificationSteps) {
             setCurrentStep('shipping');
             return;
         }
 
-        const currentIdx = STEPS.indexOf(currentStep);
+        const currentIdx = visibleSteps.indexOf(currentStep);
         const prevIdx = currentIdx - 1;
-        if (prevIdx >= 0) setCurrentStep(STEPS[prevIdx]);
+        if (prevIdx >= 0) setCurrentStep(visibleSteps[prevIdx]);
     }
 
     /* ------- iyzico form injection ------- */
@@ -573,7 +585,7 @@ async function handleGoogleLogin() {
                     <div className="border border-vant-light/10 bg-vant-black/85 backdrop-blur-sm px-3 py-2.5 rounded-sm">
                         <div className="flex items-center justify-between text-[11px] font-heading uppercase tracking-wider text-vant-muted">
                             <span>
-                                {lang === 'tr' ? `Adım ${currentVisibleStepNumber}/${STEPS.length}` : `Step ${currentVisibleStepNumber}/${STEPS.length}`}
+                                {lang === 'tr' ? `Adım ${currentVisibleStepNumber}/${visibleSteps.length}` : `Step ${currentVisibleStepNumber}/${visibleSteps.length}`}
                             </span>
                             <span>{progressPercent}%</span>
                         </div>
