@@ -52,3 +52,47 @@ export function requireApiKey(req: NextRequest): NextResponse | null {
 
     return null; // Auth OK
 }
+
+/**
+ * Enforces explicit owner approval on mutating J.A.R.V.I.S. actions.
+ *
+ * Usage:
+ * - Set `JARVIS_REQUIRE_APPROVAL=true` (default behavior if unset).
+ * - Set `JARVIS_OWNER_APPROVAL_KEY=<secret-known-only-by-owner>`.
+ * - Send header `x-jarvis-owner-approval: <secret>` on write requests.
+ */
+export function requireOwnerApproval(req: NextRequest, action: string): NextResponse | null {
+    const requireApproval = (process.env.JARVIS_REQUIRE_APPROVAL ?? 'true').toLowerCase() !== 'false';
+    if (!requireApproval) return null;
+
+    const ownerApprovalKey = process.env.JARVIS_OWNER_APPROVAL_KEY;
+    if (!ownerApprovalKey) {
+        console.error('[apiAuth] JARVIS_OWNER_APPROVAL_KEY is not set.');
+        return NextResponse.json(
+            { ok: false, error: 'Server configuration error', action },
+            { status: 500 },
+        );
+    }
+
+    const providedApproval = req.headers.get('x-jarvis-owner-approval');
+    if (!providedApproval) {
+        return NextResponse.json(
+            {
+                ok: false,
+                error: 'Owner approval required',
+                action,
+                requiredHeader: 'x-jarvis-owner-approval',
+            },
+            { status: 428 },
+        );
+    }
+
+    if (providedApproval !== ownerApprovalKey) {
+        return NextResponse.json(
+            { ok: false, error: 'Invalid owner approval token', action },
+            { status: 403 },
+        );
+    }
+
+    return null;
+}

@@ -61,6 +61,19 @@ export async function POST(req: NextRequest) {
             return NextResponse.redirect(new URL('/checkout?error=payment_failed', req.url));
         }
 
+        const orderNumber = `VANT-${orderId.substring(0, 8).toUpperCase()}`;
+
+        if (order.status === 'paid') {
+            return NextResponse.redirect(
+                new URL(`/order-success?order=${encodeURIComponent(orderNumber)}`, req.url),
+            );
+        }
+
+        if (order.status !== 'pending') {
+            console.error('[payment/callback] Order in unexpected status:', order.status);
+            return NextResponse.redirect(new URL('/checkout?error=payment_failed', req.url));
+        }
+
         if (status === 'success' && paymentStatus === 'SUCCESS') {
             const { error: paidUpdateError } = await serviceClient
                 .from('orders')
@@ -103,7 +116,7 @@ export async function POST(req: NextRequest) {
                         console.error('[payment/callback] Stock deduction failed:', stockError?.message);
                         await serviceClient
                             .from('orders')
-                            .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                            .update({ updated_at: new Date().toISOString() })
                             .eq('id', orderId);
                         return NextResponse.redirect(new URL('/checkout?error=stock', req.url));
                     }
@@ -112,12 +125,11 @@ export async function POST(req: NextRequest) {
                 console.error('[payment/callback] Stock deduction error:', err);
                 await serviceClient
                     .from('orders')
-                    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                    .update({ updated_at: new Date().toISOString() })
                     .eq('id', orderId);
                 return NextResponse.redirect(new URL('/checkout?error=stock', req.url));
             }
 
-            const orderNumber = `VANT-${orderId.substring(0, 8).toUpperCase()}`;
             return NextResponse.redirect(
                 new URL(`/order-success?order=${encodeURIComponent(orderNumber)}`, req.url),
             );

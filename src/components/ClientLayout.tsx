@@ -12,6 +12,9 @@ import JarvisWidget from '@/components/JarvisWidget';
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const variant = pathname === '/' ? 'home-neo-grunge' : 'default';
+    const mainClassName = pathname === '/'
+        ? 'min-h-screen'
+        : 'min-h-screen pt-24 md:pt-28';
 
     return (
         <ThemeProvider>
@@ -19,7 +22,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                 <CartProvider>
                     <MetaPixel />
                     <Navbar variant={variant} />
-                    <main className="min-h-screen pt-24 md:pt-28">{children}</main>
+                    <main className={mainClassName}>{children}</main>
                     <Footer variant={variant} />
                     <JarvisWidget />
                 </CartProvider>

@@ -62,6 +62,7 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                             <li><Link href="/privacy" className={linkClass}>{lang === 'tr' ? 'Gizlilik' : 'Privacy'}</Link></li>
                             <li><Link href="/kvkk" className={linkClass}>KVKK</Link></li>
                             <li><Link href="/terms" className={linkClass}>{lang === 'tr' ? 'Kullanım Koşulları' : 'Terms'}</Link></li>
+                            <li><Link href="/preliminary-info" className={linkClass}>{lang === 'tr' ? 'Ön Bilgilendirme' : 'Preliminary Info'}</Link></li>
                             <li><Link href="/distance-sales" className={linkClass}>{lang === 'tr' ? 'Mesafeli Satış' : 'Distance Sales'}</Link></li>
                         </ul>
                     </div>

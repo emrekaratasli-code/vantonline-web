@@ -495,7 +495,7 @@ async function handleGoogleLogin() {
             <div className="max-w-2xl mx-auto">
                 {/* =================== STEP 1: SHIPPING =================== */}
                 {currentStep === 'shipping' && (
-                    <FadeIn>
+                    <div>
                         <div className="mb-8 p-6 border border-vant-purple/30 rounded bg-vant-dark/50 text-center">
                             <p className="text-sm text-vant-muted font-body mb-4">
                                 {lang === 'tr' ? 'Vakit kaybetmeden devam etmek ister misiniz?' : 'Want to speed up checkout?'}
@@ -533,12 +533,12 @@ async function handleGoogleLogin() {
                                 </button>
                             </div>
                         </div>
-                    </FadeIn>
+                    </div>
                 )}
 
                 {/* =================== STEP 2: OTP =================== */}
                 {currentStep === 'otp' && (
-                    <FadeIn>
+                    <div>
                         <div className="space-y-6 text-center">
                             <p className="text-sm text-vant-muted font-body">
                                 {lang === 'tr' ? 'Lütfen e-posta adresinizi doğrulayın' : 'Please verify your email address'}
@@ -614,12 +614,12 @@ async function handleGoogleLogin() {
                                 </button>
                             </div>
                         </div>
-                    </FadeIn>
+                    </div>
                 )}
 
                 {/* =================== STEP 3: CONSENT =================== */}
                 {currentStep === 'consent' && (
-                    <FadeIn>
+                    <div>
                         <div className="space-y-6">
                             {/* Transactional note (NOT a checkbox) */}
                             <div className="p-4 border border-vant-light/10 bg-vant-gray/20">
@@ -668,12 +668,12 @@ async function handleGoogleLogin() {
                                 </button>
                             </div>
                         </div>
-                    </FadeIn>
+                    </div>
                 )}
 
                 {/* =================== STEP 4: PAYMENT =================== */}
                 {currentStep === 'payment' && (
-                    <FadeIn>
+                    <div>
                         <div className="space-y-8">
                             {/* Order summary */}
                             <div>
@@ -869,6 +869,7 @@ async function handleGoogleLogin() {
                                 </div>
                             </div>
 
+                            {/* Legal agreement */}
                             <label className="flex items-start gap-3 cursor-pointer group">
                                 <input
                                     type="checkbox"
@@ -897,7 +898,8 @@ async function handleGoogleLogin() {
                                             {' and '}
                                             <Link href="/distance-sales" target="_blank" className="text-vant-purple underline">
                                                 Distance Sales Agreement
-                                            </Link>.
+                                            </Link>
+                                            .
                                         </>
                                     )}
                                 </span>
@@ -929,12 +931,12 @@ async function handleGoogleLogin() {
                                 </button>
                             </div>
                         </div>
-                    </FadeIn>
+                    </div>
                 )}
 
                 {/* =================== STEP 5: IYZICO FORM =================== */}
                 {currentStep === 'iyzico_form' && (
-                    <FadeIn>
+                    <div>
                         <div className="space-y-6">
                             {/* Header */}
                             <div className="text-center">
@@ -967,7 +969,7 @@ async function handleGoogleLogin() {
                                 </button>
                             </div>
                         </div>
-                    </FadeIn>
+                    </div>
                 )}
             </div>
         </section>

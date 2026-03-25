@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireApiKey, getAdminClient } from '@/lib/apiAuth';
+import { requireApiKey, getAdminClient, requireOwnerApproval } from '@/lib/apiAuth';
 import { getProductBySlug } from '@/lib/supabaseProducts';
 
 /**
@@ -62,6 +62,8 @@ export async function PUT(
 ) {
     const authError = requireApiKey(req);
     if (authError) return authError;
+    const approvalError = requireOwnerApproval(req, `update_product:${params.slug}`);
+    if (approvalError) return approvalError;
 
     const result = getAdminClient();
     if ('error' in result) return result.error;
@@ -133,6 +135,8 @@ export async function DELETE(
 ) {
     const authError = requireApiKey(req);
     if (authError) return authError;
+    const approvalError = requireOwnerApproval(req, `delete_product:${params.slug}`);
+    if (approvalError) return approvalError;
 
     const result = getAdminClient();
     if ('error' in result) return result.error;

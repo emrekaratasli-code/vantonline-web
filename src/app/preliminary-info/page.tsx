@@ -1,9 +1,9 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
     title: 'Ön Bilgilendirme Formu',
-    description: 'VANT ön bilgilendirme formu.',
+    description: 'VANT ön bilgilendirme formu, sipariş, teslimat, ödeme ve iade koşullarını özetler.',
 };
 
 const sections = [
@@ -51,21 +51,30 @@ export default function PreliminaryInfoPage() {
                 <h1 className="font-heading text-display font-bold uppercase tracking-tight mb-10">
                     Ön Bilgilendirme Formu
                 </h1>
-                <p className="text-xs text-vant-muted mb-8">Son güncelleme: Şubat 2026</p>
+                <p className="text-xs text-vant-muted mb-8">Son güncelleme: Mart 2026</p>
 
-                {sections.map((s) => (
-                    <div key={s.title} className="mb-10">
-                        <h2 className="font-heading text-base uppercase tracking-wide text-vant-light mb-3">{s.title}</h2>
+                {sections.map((section) => (
+                    <div key={section.title} className="mb-10">
+                        <h2 className="font-heading text-base uppercase tracking-wide text-vant-light mb-3">
+                            {section.title}
+                        </h2>
                         <ul className="space-y-2">
-                            {s.content.map((line, i) => (
-                                <li key={i} className="text-sm text-vant-muted font-body leading-relaxed">— {line}</li>
+                            {section.content.map((line, index) => (
+                                <li key={index} className="text-sm text-vant-muted font-body leading-relaxed">
+                                    - {line}
+                                </li>
                             ))}
                         </ul>
                     </div>
                 ))}
 
-                <div className="mt-12 pt-8 border-t border-vant-light/5">
-                    <Link href="/" className="btn-outline text-xs">← Ana Sayfa</Link>
+                <div className="mt-12 pt-8 border-t border-vant-light/5 flex flex-wrap gap-3">
+                    <Link href="/distance-sales" className="btn-outline text-xs">
+                        Mesafeli Satış Sözleşmesi
+                    </Link>
+                    <Link href="/" className="btn-outline text-xs">
+                        Ana Sayfa
+                    </Link>
                 </div>
             </div>
         </section>

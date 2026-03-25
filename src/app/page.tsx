@@ -9,16 +9,41 @@ import NewsletterForm from '@/components/NewsletterForm';
 import FadeIn from '@/components/FadeIn';
 import type { Product } from '@/data/products';
 
+const DEFAULT_HERO_MEDIA: Array<{ src: string; type: 'video' | 'image' }> = [
+    { src: '/videos/hero.mp4', type: 'video' },
+    { src: '/videos/Hero1.jpg', type: 'image' },
+];
+
+const HERO_ALLOWED_HOSTS = (() => {
+    const hosts = new Set<string>(['vantonline.com', 'www.vantonline.com']);
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (supabaseUrl) {
+        try {
+            hosts.add(new URL(supabaseUrl).hostname);
+        } catch {
+            // Ignore malformed env URL and keep defaults.
+        }
+    }
+    return hosts;
+})();
+
+function isAllowedHeroSrc(src: string): boolean {
+    if (!src || typeof src !== 'string') return false;
+    if (src.startsWith('/')) return true;
+    try {
+        return HERO_ALLOWED_HOSTS.has(new URL(src).hostname);
+    } catch {
+        return false;
+    }
+}
+
 export default function HomePage() {
     const { lang, t } = useLanguage();
     const [featured, setFeatured] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Hero media state — defaults to fallback until loaded
-    const [heroMedia, setHeroMedia] = useState<{ src: string; type: 'video' | 'image' }[]>([
-        { src: '/videos/hero.mp4', type: 'video' },
-        { src: '/videos/Hero1.jpg', type: 'image' },
-    ]);
+    const [heroMedia, setHeroMedia] = useState<{ src: string; type: 'video' | 'image' }[]>(DEFAULT_HERO_MEDIA);
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
 
     const handleMediaEnded = () => {
@@ -42,7 +67,10 @@ export default function HomePage() {
         import('@/lib/supabaseHero').then(m => {
             m.getHeroAssets().then(data => {
                 if (data && data.length > 0) {
-                    setHeroMedia(data.map(item => ({ src: item.src, type: item.type })));
+                    const safeAssets = data
+                        .map(item => ({ src: item.src, type: item.type }))
+                        .filter(item => isAllowedHeroSrc(item.src));
+                    setHeroMedia(safeAssets.length > 0 ? safeAssets : DEFAULT_HERO_MEDIA);
                 }
             }).catch(console.error);
         });

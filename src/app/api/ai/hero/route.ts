@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireApiKey, getAdminClient } from '@/lib/apiAuth';
+import { requireApiKey, getAdminClient, requireOwnerApproval } from '@/lib/apiAuth';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 /**
@@ -55,6 +55,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     const authError = requireApiKey(req);
     if (authError) return authError;
+    const approvalError = requireOwnerApproval(req, 'create_hero_asset');
+    if (approvalError) return approvalError;
 
     const result = getAdminClient();
     if ('error' in result) return result.error;
@@ -105,6 +107,8 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
     const authError = requireApiKey(req);
     if (authError) return authError;
+    const approvalError = requireOwnerApproval(req, 'update_hero_asset');
+    if (approvalError) return approvalError;
 
     const result = getAdminClient();
     if ('error' in result) return result.error;
@@ -162,6 +166,8 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
     const authError = requireApiKey(req);
     if (authError) return authError;
+    const approvalError = requireOwnerApproval(req, 'delete_hero_asset');
+    if (approvalError) return approvalError;
 
     const result = getAdminClient();
     if ('error' in result) return result.error;

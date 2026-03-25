@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireApiKey, getAdminClient } from '@/lib/apiAuth';
+import { requireApiKey, getAdminClient, requireOwnerApproval } from '@/lib/apiAuth';
 import { getAllProducts, getFeaturedProducts, getProductsByCategory } from '@/lib/supabaseProducts';
 
 /**
@@ -69,6 +69,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     const authError = requireApiKey(req);
     if (authError) return authError;
+    const approvalError = requireOwnerApproval(req, 'create_product');
+    if (approvalError) return approvalError;
 
     const result = getAdminClient();
     if ('error' in result) return result.error;

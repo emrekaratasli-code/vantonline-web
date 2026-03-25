@@ -28,7 +28,18 @@ Set your values:
 ```
 NEXT_PUBLIC_META_PIXEL_ID=your_pixel_id
 NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+
+# J.A.R.V.I.S. control mode (owner approval required for AI write actions)
+API_SECRET_KEY=your_api_secret_key
+JARVIS_REQUIRE_APPROVAL=true
+JARVIS_OWNER_APPROVAL_KEY=your_owner_only_approval_key
 ```
+
+When `JARVIS_REQUIRE_APPROVAL=true`, all write endpoints under `/api/ai/*` require:
+- `Authorization: Bearer <API_SECRET_KEY>`
+- `x-jarvis-owner-approval: <JARVIS_OWNER_APPROVAL_KEY>`
+
+Without the owner-approval header, write actions are blocked.
 
 ## Deploy
 

@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
 type CarrierRow = {
@@ -15,6 +15,10 @@ type RateRow = {
     price: number;
     estimated_days: string | null;
     carrier: CarrierRow | CarrierRow[] | null;
+};
+
+type SelectedRate = Omit<RateRow, 'carrier'> & {
+    carrier: CarrierRow;
 };
 
 /* ------------------------------------------------------------------ */
@@ -63,25 +67,26 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ carriers: [], fallback: true });
     }
 
-    const carrierMap = new Map<string, { rate: RateRow; carrier: CarrierRow }>();
+    // Group by carrier: prefer exact city, otherwise fallback city.
+    const carrierMap = new Map<string, SelectedRate>();
     for (const rate of rates) {
-        const carrier = Array.isArray(rate.carrier) ? rate.carrier[0] : rate.carrier;
+        const carrier = Array.isArray(rate.carrier) ? (rate.carrier[0] ?? null) : rate.carrier;
         if (!carrier) continue;
         if (carrier.is_active === false) continue;
 
         const existing = carrierMap.get(carrier.id);
         const isExact = rate.city === city;
         if (!existing || isExact) {
-            carrierMap.set(carrier.id, { rate, carrier });
+            carrierMap.set(carrier.id, { ...rate, carrier });
         }
     }
 
     const carriers = Array.from(carrierMap.values())
-        .map(({ rate, carrier }) => ({
-            carrierId: carrier.id,
-            carrierName: carrier.name,
-            carrierLogo: carrier.logo_url,
-            sortOrder: carrier.sort_order,
+        .map((rate) => ({
+            carrierId: rate.carrier.id,
+            carrierName: rate.carrier.name,
+            carrierLogo: rate.carrier.logo_url,
+            sortOrder: rate.carrier.sort_order,
             price: rate.price,
             estimatedDays: rate.estimated_days,
             city: rate.city,
@@ -90,4 +95,3 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ carriers, fallback: carriers.every((item) => item.city !== city) });
 }
-
