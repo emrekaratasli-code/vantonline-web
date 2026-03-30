@@ -7,11 +7,13 @@ import { NextRequest, NextResponse } from 'next/server';
  * Force rebuild to pick up new env vars.
  */
 
+const DEFAULT_BOT_API_URL = 'https://jarvis-bot-2d6x.onrender.com';
+
 const BOT_API_URL =
     process.env.CHATBOT_API_URL ||
     process.env.JARVIS_BOT_URL ||
     process.env.NEXT_PUBLIC_CHATBOT_API_URL ||
-    '';
+    DEFAULT_BOT_API_URL;
 
 export async function POST(req: NextRequest) {
     try {
