@@ -16,8 +16,8 @@ export default function JarvisWidget() {
     // Initial greeting (preserve existing messages; only seed once)
     useEffect(() => {
         const greeting = lang === 'tr'
-            ? 'Merhaba, ben J.A.R.V.I.S. VANT Art Protokolü hakkında sormak istediğiniz bir şey var mı?'
-            : 'Hello, I am J.A.R.V.I.S. Do you have any questions about the VANT Art Protocol?';
+            ? 'Ben VANT. Genel sorulari burada cozeriz; siparisinle ilgili net destek istiyorsan once giris yap dostum.'
+            : 'I am VANT. We can handle general questions here; if you want order-specific help, sign in first.';
 
         setMessages((prev) => (prev.length === 0 ? [{ role: 'bot', text: greeting }] : prev));
     }, [lang]);
@@ -32,7 +32,7 @@ export default function JarvisWidget() {
         if (!input.trim()) return;
 
         const userMsg = input.trim();
-        const sessionId = typeof window !== 'undefined' ? (localStorage.getItem('jarvis_session_id') || `web-${Math.random().toString(36).substring(7)}`) : '';
+        const sessionId = typeof window !== 'undefined' ? (localStorage.getItem('vant_session_id') || `web-${Math.random().toString(36).substring(7)}`) : '';
         
         setMessages((prev: Message[]) => [...prev, { role: 'user', text: userMsg }]);
         setInput('');
@@ -55,13 +55,13 @@ export default function JarvisWidget() {
             }
             
             if (data.session_id && typeof window !== 'undefined') {
-                localStorage.setItem('jarvis_session_id', data.session_id);
+                localStorage.setItem('vant_session_id', data.session_id);
             }
             setMessages((prev: Message[]) => [...prev, { role: 'bot', text: data.reply }]);
         } catch (err: any) {
             const errorMsg = err.message || (lang === 'tr'
-                ? 'J.A.R.V.I.S. şu an meşgul, lütfen birazdan tekrar deneyin.'
-                : 'J.A.R.V.I.S. is currently busy, please try again later.');
+                ? 'VANT su an biraz yogun, birazdan tekrar gir.'
+                : 'VANT is a little busy right now, try again in a bit.');
             setMessages((prev: Message[]) => [...prev, { role: 'bot', text: `Error: ${errorMsg}` }]);
         } finally {
             setIsTyping(false);
@@ -82,7 +82,7 @@ export default function JarvisWidget() {
                         <div className="p-4 border-b border-vant-purple/20 bg-vant-purple/5 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-vant-purple animate-pulse" />
-                                <span className="font-heading uppercase tracking-widest text-xs text-vant-light">J.A.R.V.I.S. Core</span>
+                                <span className="font-heading uppercase tracking-widest text-xs text-vant-light">VANT</span>
                             </div>
                             <button onClick={() => setIsOpen(false)} className="text-vant-muted hover:text-vant-light transition-colors">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -105,7 +105,7 @@ export default function JarvisWidget() {
                             {isTyping && (
                                 <div className="flex justify-start">
                                     <div className="bg-vant-gray text-vant-muted p-3 rounded-r-lg rounded-tl-lg text-xs animate-pulse">
-                                        Processing...
+                                        VANT yaziyor...
                                     </div>
                                 </div>
                             )}

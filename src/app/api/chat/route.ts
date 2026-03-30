@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 /**
  * POST /api/chat
  * 
- * Proxy route to J.A.R.V.I.S. Telegram Bot API (Render).
+ * Proxy route to the VANT chat backend (Render).
  * Force rebuild to pick up new env vars.
  */
 
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ ok: false, error: 'Message is required' }, { status: 400 });
         }
 
-        // Forward to the real J.A.R.V.I.S. API with timeout
+        // Forward to the real VANT chat API with timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('[chatbot_proxy] Backend error:', response.status, errorText);
-                return NextResponse.json({ ok: false, error: 'J.A.R.V.I.S. is temporarily unavailable' }, { status: 502 });
+                return NextResponse.json({ ok: false, error: 'VANT is temporarily unavailable' }, { status: 502 });
             }
 
             const data = await response.json();
