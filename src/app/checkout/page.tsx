@@ -7,6 +7,11 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n';
 import { useCart } from '@/lib/CartContext';
 import FadeIn from '@/components/FadeIn';
+import {
+    HIGH_INCOME_COUNTRIES,
+    getCityOptionsByCountry,
+    buildInternationalShippingOption,
+} from '@/lib/internationalShipping';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -18,6 +23,7 @@ interface ShippingData {
     phone: string;
     country: string;
     address: string;
+    country: string;
     city: string;
     district: string;
     postalCode: string;
@@ -41,6 +47,7 @@ interface ShippingRateOption {
 type PaymentMethod = 'bank_transfer' | 'credit_card';
 
 type Step = 'shipping' | 'otp' | 'consent' | 'payment' | 'iyzico_form';
+type SelectOption = { value: string; label: string };
 
 const STEPS: Step[] = ['shipping', 'otp', 'consent', 'payment'];
 const OTHER_CITY_VALUE = 'Diger';
@@ -117,6 +124,112 @@ function isValidEmail(email: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+type ThemedSelectFieldProps = {
+    label: string;
+    value: string;
+    options: SelectOption[];
+    placeholder: string;
+    disabled?: boolean;
+    error?: string;
+    onChange: (nextValue: string) => void;
+    labelClassName: string;
+    inputClassName: string;
+    errorClassName: string;
+};
+
+function ThemedSelectField({
+    label,
+    value,
+    options,
+    placeholder,
+    disabled = false,
+    error,
+    onChange,
+    labelClassName,
+    inputClassName,
+    errorClassName,
+}: ThemedSelectFieldProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const wrapperRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleOutsideClick = (event: MouseEvent) => {
+            if (!wrapperRef.current?.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, []);
+
+    const selectedOption = options.find((option) => option.value === value);
+    const canOpen = !disabled && options.length > 0;
+
+    return (
+        <div ref={wrapperRef} className="relative">
+            <label className={labelClassName}>{label}</label>
+            <button
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+                disabled={disabled}
+                onClick={() => {
+                    if (!canOpen) return;
+                    setIsOpen((prev) => !prev);
+                }}
+                className={`${inputClassName} flex items-center justify-between text-left pr-11 ${
+                    disabled
+                        ? 'opacity-60 cursor-not-allowed'
+                        : 'cursor-pointer hover:border-vant-purple/70'
+                }`}
+            >
+                <span className={selectedOption ? 'text-vant-light' : 'text-vant-muted/60'}>
+                    {selectedOption?.label || placeholder}
+                </span>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className={`w-4 h-4 text-vant-muted transition-transform duration-200 ${
+                        isOpen ? 'rotate-180 text-vant-purple' : ''
+                    }`}
+                >
+                    <path
+                        fillRule="evenodd"
+                        d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z"
+                        clipRule="evenodd"
+                    />
+                </svg>
+            </button>
+
+            {isOpen && canOpen && (
+                <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto border border-vant-purple/40 bg-vant-dark/95 shadow-[0_14px_30px_rgba(0,0,0,0.55)] backdrop-blur-sm">
+                    {options.map((option) => (
+                        <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                                onChange(option.value);
+                                setIsOpen(false);
+                            }}
+                            className={`w-full px-4 py-2.5 text-left text-sm font-body transition-colors ${
+                                value === option.value
+                                    ? 'bg-vant-purple/30 text-vant-light'
+                                    : 'text-vant-light/85 hover:bg-vant-purple/15 hover:text-vant-light'
+                            }`}
+                        >
+                            {option.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {error && <p className={errorClassName}>{error}</p>}
+        </div>
+    );
+}
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -131,7 +244,7 @@ export default function CheckoutPage() {
     // Shipping
     const [shipping, setShipping] = useState<ShippingData>({
         firstName: '', lastName: '', email: '', phone: '',
-        country: 'TR', address: '', city: '', district: '', postalCode: '',
+        address: '', country: 'TR', city: '', district: '', postalCode: '',
     });
 
     // OTP
@@ -169,6 +282,11 @@ export default function CheckoutPage() {
     const selectedShippingRate = shippingOptions[0] ?? null;
     const shippingTotal = selectedShippingRate?.price ?? 0;
     const payableTotal = cartTotal + shippingTotal;
+    const selectedCountry = HIGH_INCOME_COUNTRIES.find((option) => option.code === shipping.country);
+    const selectedCountryLabel = selectedCountry
+        ? (lang === 'tr' ? selectedCountry.labelTr : selectedCountry.labelEn)
+        : shipping.country;
+    const cityOptions = getCityOptionsByCountry(shipping.country).map((city) => ({ value: city, label: city }));
 
     // Restore checkout draft (shipping + consent + payment method)
     useEffect(() => {
@@ -263,11 +381,36 @@ export default function CheckoutPage() {
             return { ...prev, country: detected, city: '' };
         });
     }, []);
-
     useEffect(() => {
         const city = shipping.city.trim();
         if (city.length < 2) {
             setShippingOptions([]);
+            setShippingError('');
+            setShippingLoading(false);
+            return;
+        }
+
+        if (shipping.country !== 'TR') {
+            const intlOption = buildInternationalShippingOption(shipping.country, city);
+            if (!intlOption) {
+                setShippingOptions([]);
+                setShippingError(
+                    lang === 'tr'
+                        ? 'Bu ulke icin kargo hesaplamasi henuz aktif degil.'
+                        : 'Shipping calculation for this country is not active yet.',
+                );
+                setShippingLoading(false);
+                return;
+            }
+            setShippingOptions([{
+                carrierId: intlOption.carrierId,
+                carrierName: intlOption.carrierName,
+                carrierLogo: null,
+                sortOrder: 0,
+                price: intlOption.price,
+                estimatedDays: intlOption.estimatedDays,
+                city: city,
+            }]);
             setShippingError('');
             setShippingLoading(false);
             return;
@@ -311,7 +454,7 @@ export default function CheckoutPage() {
             clearTimeout(timer);
             controller.abort();
         };
-    }, [shipping.city, lang]);
+    }, [shipping.country, shipping.city, lang]);
 
     useEffect(() => {
         const selectedCountry = SHIPPING_COUNTRIES.find((item) => item.code === shipping.country);
@@ -581,10 +724,9 @@ async function handleGoogleLogin() {
     const inputCn = 'w-full bg-transparent border border-vant-light/10 px-4 py-3.5 text-base md:text-sm text-vant-light font-body placeholder:text-vant-muted/40 focus:outline-none focus:border-vant-purple transition-colors';
     const labelCn = 'block text-[11px] md:text-xs font-heading uppercase tracking-wider text-vant-muted mb-2';
     const errorCn = 'text-xs text-red-400 mt-1';
-    const selectedCountry = SHIPPING_COUNTRIES.find((item) => item.code === shipping.country) ?? null;
-    const cityOptions = selectedCountry?.cities ?? [];
     const selectPlaceholder = lang === 'tr' ? 'Seçiniz' : 'Select';
     const displayCity = shipping.city === OTHER_CITY_VALUE ? (lang === 'tr' ? 'Diğer' : 'Other') : shipping.city;
+    const deliveryLocation = [displayCity, selectedCountryLabel].filter(Boolean).join(', ');
 
     function shippingField(key: keyof ShippingData, label: string, type = 'text', placeholder = '') {
         return (
@@ -602,53 +744,47 @@ async function handleGoogleLogin() {
         );
     }
 
-    function shippingCountryField() {
+    function shippingSelectField(
+        key: keyof ShippingData,
+        label: string,
+        options: SelectOption[],
+        disabled = false,
+        onValueChange?: (nextValue: string) => void,
+    ) {
         return (
-            <div>
-                <label className={labelCn}>{lang === 'tr' ? 'Ülke' : 'Country'}</label>
-                <select
-                    value={shipping.country}
-                    onChange={(e) => {
-                        const nextCountry = e.target.value;
-                        setShipping((prev) => ({ ...prev, country: nextCountry, city: '' }));
-                    }}
-                    className={inputCn}
-                >
-                    <option value="">{selectPlaceholder}</option>
-                    {SHIPPING_COUNTRIES.map((country) => (
-                        <option key={country.code} value={country.code} className="bg-black text-white">
-                            {lang === 'tr' ? country.tr : country.en}
-                        </option>
-                    ))}
-                </select>
-                {errors.country && <p className={errorCn}>{errors.country}</p>}
-            </div>
+            <ThemedSelectField
+                label={label}
+                value={String(shipping[key] ?? '')}
+                options={options}
+                placeholder={lang === 'tr' ? 'Seçiniz' : 'Select'}
+                disabled={disabled}
+                error={errors[key]}
+                labelClassName={labelCn}
+                inputClassName={inputCn}
+                errorClassName={errorCn}
+                onChange={(nextValue) => {
+                    if (onValueChange) {
+                        onValueChange(nextValue);
+                        return;
+                    }
+                    setShipping({ ...shipping, [key]: nextValue });
+                }}
+            />
         );
     }
 
-    function shippingCityField() {
+    function shippingTextAreaField(key: keyof ShippingData, label: string, placeholder = '') {
         return (
             <div>
-                <label className={labelCn}>{t.checkout.city[lang]}</label>
-                <select
-                    value={shipping.city}
-                    onChange={(e) => setShipping((prev) => ({ ...prev, city: e.target.value }))}
-                    className={inputCn}
-                    disabled={!shipping.country}
-                >
-                    <option value="">{selectPlaceholder}</option>
-                    {cityOptions.map((city) => (
-                        <option key={city} value={city} className="bg-black text-white">
-                            {city}
-                        </option>
-                    ))}
-                    {!cityOptions.includes(OTHER_CITY_VALUE) && (
-                        <option value={OTHER_CITY_VALUE} className="bg-black text-white">
-                            {lang === 'tr' ? 'Diğer' : 'Other'}
-                        </option>
-                    )}
-                </select>
-                {errors.city && <p className={errorCn}>{errors.city}</p>}
+                <label className={labelCn}>{label}</label>
+                <textarea
+                    value={shipping[key]}
+                    onChange={(e) => setShipping({ ...shipping, [key]: e.target.value })}
+                    placeholder={placeholder}
+                    rows={4}
+                    className={`${inputCn} resize-y min-h-[112px]`}
+                />
+                {errors[key] && <p className={errorCn}>{errors[key]}</p>}
             </div>
         );
     }
@@ -758,20 +894,34 @@ async function handleGoogleLogin() {
                             {shippingField('email', t.checkout.email[lang], 'email')}
                             {shippingField('phone', lang === 'tr' ? 'Telefon (İsteğe Bağlı)' : 'Phone (Optional)', 'tel', t.checkout.phonePlaceholder[lang])}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {shippingCountryField()}
-                                {shippingCityField()}
+                                {shippingSelectField(
+                                    'country',
+                                    lang === 'tr' ? 'Ülke' : 'Country',
+                                    HIGH_INCOME_COUNTRIES.map((country) => ({
+                                        value: country.code,
+                                        label: lang === 'tr' ? country.labelTr : country.labelEn,
+                                    })),
+                                    false,
+                                    (nextCountry) => {
+                                        setShipping({
+                                            ...shipping,
+                                            country: nextCountry,
+                                            city: '',
+                                            district: '',
+                                            postalCode: '',
+                                        });
+                                        setShippingOptions([]);
+                                        setShippingError('');
+                                    },
+                                )}
+                                {shippingSelectField(
+                                    'city',
+                                    t.checkout.city[lang],
+                                    cityOptions,
+                                    cityOptions.length === 0,
+                                )}
                             </div>
-                            <div>
-                                <label className={labelCn}>{lang === 'tr' ? 'Adres Detayı' : 'Address Detail'}</label>
-                                <textarea
-                                    value={shipping.address}
-                                    onChange={(e) => setShipping((prev) => ({ ...prev, address: e.target.value }))}
-                                    rows={4}
-                                    placeholder={lang === 'tr' ? 'Mahalle, cadde/sokak, bina no, daire no vb.' : 'Neighborhood, street, building no, apartment no, etc.'}
-                                    className={inputCn}
-                                />
-                                {errors.address && <p className={errorCn}>{errors.address}</p>}
-                            </div>
+                            {shippingTextAreaField('address', lang === 'tr' ? 'Adres Detayı' : 'Address Detail', lang === 'tr' ? 'Mahalle, cadde/sokak, bina no, daire no vb.' : 'Neighborhood, street, building no, apartment no, etc.')}
                             <div className="pt-3 md:pt-4 sticky bottom-0 bg-vant-black/90 backdrop-blur-sm -mx-3 px-3 py-3 md:static md:bg-transparent md:backdrop-blur-0 md:mx-0 md:px-0 md:py-0">
                                 <button onClick={goNext} className="btn-primary w-full">
                                     {t.checkout.next[lang]}
@@ -989,9 +1139,8 @@ async function handleGoogleLogin() {
                                     </p>
                                     <p className="text-sm text-vant-light/80 font-body">
                                         {shipping.firstName} {shipping.lastName}<br />
-                                        {shipping.address}<br />
-                                        {displayCity}
-                                        {selectedCountry ? `, ${lang === 'tr' ? selectedCountry.tr : selectedCountry.en}` : ''}
+                                        <span className="whitespace-pre-line">{shipping.address}</span><br />
+                                        {deliveryLocation}
                                     </p>
                                 </div>
 

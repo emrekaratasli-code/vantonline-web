@@ -15,7 +15,7 @@ export default function AboutPage() {
                     </h1>
 
                     <div className="mt-12 space-y-10">
-                        <p className="text-base md:text-lg text-vant-muted/60 font-body leading-[1.8]">
+                        <p className="text-base md:text-lg text-vant-light/90 font-body leading-[1.9]">
                             {t.about.corporateIntro[lang]}
                         </p>
 

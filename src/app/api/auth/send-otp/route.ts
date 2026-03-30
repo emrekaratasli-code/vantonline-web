@@ -26,6 +26,8 @@ function isRateLimited(key: string): boolean {
 export async function POST(req: NextRequest) {
     try {
         const { email } = await req.json();
+        const otpDevBypassEnabled = process.env.OTP_DEV_BYPASS === 'true';
+        const otpDevCode = process.env.OTP_DEV_CODE || '123456';
 
         if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             return NextResponse.json(
@@ -60,9 +62,9 @@ export async function POST(req: NextRequest) {
         }
 
         // Dev bypass — skip real email in development for testing
-        if (process.env.NODE_ENV === 'development') {
-            console.log(`[send-otp] DEV MODE — skipping real Auth email for ${email}. Use code: 123456`);
-            return NextResponse.json({ ok: true, dev: true });
+        if (otpDevBypassEnabled) {
+            console.log('[send-otp] DEV BYPASS active for ' + email + '. Use code: ' + otpDevCode);
+            return NextResponse.json({ ok: true, dev: true, bypass: true });
         }
 
         // Trigger Supabase API Email OTP

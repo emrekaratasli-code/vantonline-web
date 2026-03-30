@@ -1,5 +1,6 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase';
+import { buildInternationalShippingOption } from '@/lib/internationalShipping';
 
 type PaymentMethod = 'bank_transfer' | 'credit_card';
 
@@ -126,41 +127,64 @@ export async function POST(req: NextRequest) {
             price: number;
             estimatedDays: string | null;
             city: string;
+            country?: string;
         } | null = null;
 
         const fallbackCities = ['Diger', 'Diğer'];
         const requestedCarrierId = String(shippingRate.carrierId);
+        const countryCode = String(shipping.country || 'TR').toUpperCase();
 
-        const { data: rateRows, error: rateError } = await serviceClient
-            .from('shipping_rates')
-            .select('price, city, estimated_days, carrier:shipping_carriers!carrier_id(id, name, is_active)')
-            .eq('is_active', true)
-            .eq('carrier_id', requestedCarrierId)
-            .in('city', [shipping.city, ...fallbackCities]);
+        if (countryCode !== 'TR') {
+            const internationalRate = buildInternationalShippingOption(countryCode, shipping.city);
+            if (!internationalRate) {
+                return NextResponse.json({ error: 'Shipping is not available for this country yet.' }, { status: 409 });
+            }
+            if (requestedCarrierId !== internationalRate.carrierId) {
+                return NextResponse.json({ error: 'Shipping carrier mismatch.' }, { status: 409 });
+            }
 
-        if (rateError || !rateRows || rateRows.length === 0) {
-            return NextResponse.json({ error: 'Shipping rate not found.' }, { status: 409 });
+            shippingFee = Number(internationalRate.price || 0);
+            resolvedShippingRate = {
+                carrierId: internationalRate.carrierId,
+                carrierName: internationalRate.carrierName,
+                price: shippingFee,
+                estimatedDays: internationalRate.estimatedDays || null,
+                city: internationalRate.city,
+                country: countryCode,
+            };
+        } else {
+            const { data: rateRows, error: rateError } = await serviceClient
+                .from('shipping_rates')
+                .select('price, city, estimated_days, carrier:shipping_carriers!carrier_id(id, name, is_active)')
+                .eq('is_active', true)
+                .eq('carrier_id', requestedCarrierId)
+                .in('city', [shipping.city, ...fallbackCities]);
+
+            if (rateError || !rateRows || rateRows.length === 0) {
+                return NextResponse.json({ error: 'Shipping rate not found.' }, { status: 409 });
+            }
+
+            const exactRate = rateRows.find((row: any) => row.city === shipping.city);
+            const fallbackRate = rateRows.find((row: any) => fallbackCities.includes(row.city));
+            const chosenRate = exactRate || fallbackRate;
+            const chosenCarrier = Array.isArray(chosenRate?.carrier)
+                ? chosenRate.carrier[0]
+                : chosenRate?.carrier;
+
+            if (!chosenRate || !chosenCarrier || chosenCarrier.is_active === false) {
+                return NextResponse.json({ error: 'Selected carrier is not available.' }, { status: 409 });
+            }
+
+            shippingFee = Number(chosenRate.price || 0);
+            resolvedShippingRate = {
+                carrierId: String(chosenCarrier.id),
+                carrierName: chosenCarrier.name,
+                price: shippingFee,
+                estimatedDays: chosenRate.estimated_days || null,
+                city: chosenRate.city,
+                country: countryCode,
+            };
         }
-
-        const exactRate = rateRows.find((row: any) => row.city === shipping.city);
-        const fallbackRate = rateRows.find((row: any) => fallbackCities.includes(row.city));
-        const chosenRate = exactRate || fallbackRate;
-        const chosenCarrier = Array.isArray(chosenRate?.carrier)
-            ? chosenRate.carrier[0]
-            : chosenRate?.carrier;
-
-        if (!chosenRate || !chosenCarrier || chosenCarrier.is_active === false) {
-            return NextResponse.json({ error: 'Selected carrier is not available.' }, { status: 409 });
-        }
-
-        shippingFee = Number(chosenRate.price || 0);
-        resolvedShippingRate = {
-            carrierId: String(chosenCarrier.id),
-            carrierName: chosenCarrier.name,
-            price: shippingFee,
-            estimatedDays: chosenRate.estimated_days || null,
-            city: chosenRate.city,
-        };
 
         const expectedGrandTotal = calculatedTotal + shippingFee;
         if (Number.isFinite(Number(shippingTotal)) && Number(shippingTotal) !== shippingFee) {
@@ -209,6 +233,7 @@ export async function POST(req: NextRequest) {
             phone: customerPhone,
             country: shipping.country || null,
             address: shipping.address,
+            country: shipping.country || 'TR',
             city: shipping.city,
             district: shipping.district || null,
             postalCode: shipping.postalCode || null,
@@ -279,3 +304,4 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: false, error: `Server error: ${msg}` }, { status: 500 });
     }
 }
+

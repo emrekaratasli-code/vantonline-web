@@ -157,12 +157,12 @@ const translations = {
     about: {
         title: { tr: 'Hakkımızda', en: 'About Us' },
         corporateIntro: {
-            tr: 'VANT Art, 2026 yılında Türkiye\'nin sokaklarında doğdu. Modern tasarımın vizyonunu, sokağın dinamik ruhuyla harmanlayarak falan filan...',
-            en: 'VANT Art was born on the streets of Turkey in 2026. Blending the vision of modern design with the dynamic spirit of the streets blah blah blah...',
+            tr: 'VANT Art, 2026 yılında Türkiye\'nin sokaklarında doğdu. Kalabalığın ritminden, gecenin enerjisinden ve gerçek hayatın sertliğinden beslendi; vitrinin cilalı hikayelerinden değil.',
+            en: 'VANT Art was born on the streets of Turkey in 2026. It was shaped by crowded nights, raw energy, and real life - not by polished showroom stories.',
         },
         story: {
-            tr: 'Hayır, bu kurumsal masalları bir kenara bırakalım.',
-            en: 'No, let\'s put aside these corporate fairy tales.',
+            tr: 'Ama dürüst olalım: kurumsal masal tam burada biter.',
+            en: 'But let us be honest: this is where the corporate fairytale ends.',
         },
         storyBody: {
             tr: 'Bizim tek bir amacımız var: Standartları başkalaştırmak. Bize dayatılan o tek tip güzellik algılarıyla ciddi bir derdimiz var. Bu yüzden tasarımlarımızla sadece bir şeyler üretmek değil, bir şeyler anlatmak istiyoruz. Kendimizi. Sizi. Ve o içimizdeki asıl gerçeği.',

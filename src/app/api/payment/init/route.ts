@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
             firstName?: string;
             lastName?: string;
             address?: string;
+            country?: string;
             city?: string;
             country?: string;
             email?: string;
@@ -74,7 +75,8 @@ export async function POST(req: NextRequest) {
         const buyerSurname = shippingAddress.lastName || shipping?.lastName || 'Soyad';
         const buyerAddress = shippingAddress.address || shipping?.address || 'Adres';
         const buyerCity = shippingAddress.city || shipping?.city || 'Istanbul';
-        const buyerCountry = shippingAddress.country || shipping?.country || 'Turkey';
+        const buyerCountryRaw = shippingAddress.country || shipping?.country || 'TR';
+        const buyerCountry = buyerCountryRaw === 'TR' ? 'Turkey' : buyerCountryRaw;
         const buyerPhone = shippingAddress.phone || customerPhone || '+905000000000';
         const buyerEmail = shippingAddress.email || shipping?.email || 'musteri@vantonline.com';
 

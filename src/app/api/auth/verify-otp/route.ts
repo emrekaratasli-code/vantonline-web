@@ -25,6 +25,8 @@ function isRateLimited(key: string): boolean {
 export async function POST(req: NextRequest) {
     try {
         const { email, phone, code, customer, consents } = await req.json();
+        const otpDevBypassEnabled = process.env.OTP_DEV_BYPASS === 'true';
+        const otpDevCode = process.env.OTP_DEV_CODE || '123456';
 
         if (!email || !code || typeof code !== 'string' || code.length !== 6) {
             return NextResponse.json(
@@ -48,10 +50,9 @@ export async function POST(req: NextRequest) {
         }
 
         // Dev bypass — accept 123456 in development without hitting Auth API
-        if (process.env.NODE_ENV === 'development' && code === '123456') {
-            console.log(`[verify-otp] DEV MODE — accepting test code for ${email}`);
+        if (otpDevBypassEnabled && code === otpDevCode) {
+            console.log('[verify-otp] DEV BYPASS active - accepting test code for ' + email);
 
-            // Still upsert customer data in dev mode
             const serviceClient = createServiceRoleClient();
             if (serviceClient) {
                 await serviceClient
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
                     .upsert({ email, phone: phone || null, verified: true }, { onConflict: 'email' });
             }
 
-            return NextResponse.json({ ok: true, dev: true });
+            return NextResponse.json({ ok: true, dev: true, bypass: true });
         }
 
         // Verify OTP via Email
