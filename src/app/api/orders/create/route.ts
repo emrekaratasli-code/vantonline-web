@@ -11,6 +11,8 @@ type CreateOrderItemInput = {
     quantity: number;
 };
 
+const E164_REGEX = /^\+[1-9]\d{7,14}$/;
+
 /* ------------------------------------------------------------------ */
 /*  POST /api/orders/create                                            */
 /*  Creates an order in Supabase from cart + shipping data.            */
@@ -28,8 +30,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid order payload.' }, { status: 400 });
         }
 
-        if (!customerPhone) {
-            return NextResponse.json({ error: 'Customer phone is required.' }, { status: 400 });
+        const normalizedCustomerPhone =
+            typeof customerPhone === 'string' && customerPhone.trim().length > 0
+                ? customerPhone.trim()
+                : null;
+
+        if (normalizedCustomerPhone && !E164_REGEX.test(normalizedCustomerPhone)) {
+            return NextResponse.json({ error: 'Phone must be in E.164 format.' }, { status: 400 });
         }
 
         if (!shipping.firstName || !shipping.lastName || !shipping.address || !shipping.city) {
@@ -199,11 +206,21 @@ export async function POST(req: NextRequest) {
 
         if (normalizedEmail) {
             // First try to find existing customer by email
-            const { data: existingCustomer } = await serviceClient
+            const { data: existingCustomer, error: existingCustomerError } = await serviceClient
                 .from('customers')
                 .select('id')
                 .eq('email', normalizedEmail)
                 .maybeSingle();
+
+            if (existingCustomerError) {
+                console.error('[orders/create] Customer lookup error:', {
+                    message: existingCustomerError.message,
+                    code: (existingCustomerError as any).code,
+                    details: (existingCustomerError as any).details,
+                    hint: (existingCustomerError as any).hint,
+                });
+                return NextResponse.json({ error: 'Could not verify customer.' }, { status: 500 });
+            }
 
             if (existingCustomer) {
                 customerId = existingCustomer.id;
@@ -213,25 +230,48 @@ export async function POST(req: NextRequest) {
                     .from('customers')
                     .insert({
                         email: normalizedEmail,
-                        phone: customerPhone || null,
+                        phone: normalizedCustomerPhone,
                         first_name: shipping.firstName,
                         last_name: shipping.lastName,
                     })
                     .select('id')
                     .single();
-                
+
                 if (!createError && newCustomer) {
                     customerId = newCustomer.id;
+                } else if (createError && normalizedCustomerPhone) {
+                    // Recover from a unique-phone clash by reusing the existing customer.
+                    const { data: customerByPhone } = await serviceClient
+                        .from('customers')
+                        .select('id')
+                        .eq('phone', normalizedCustomerPhone)
+                        .maybeSingle();
+                    if (customerByPhone) {
+                        customerId = customerByPhone.id;
+                    }
+                }
+
+                if (!customerId) {
+                    console.error('[orders/create] Customer create error:', {
+                        message: createError?.message,
+                        code: (createError as any)?.code,
+                        details: (createError as any)?.details,
+                        hint: (createError as any)?.hint,
+                    });
+                    return NextResponse.json({ error: 'Could not prepare customer record.' }, { status: 500 });
                 }
             }
+        }
+
+        if (!customerId) {
+            return NextResponse.json({ error: 'Customer record is required.' }, { status: 409 });
         }
 
         const shippingAddress = {
             firstName: shipping.firstName,
             lastName: shipping.lastName,
             email: shipping.email || null,
-            phone: customerPhone,
-            country: shipping.country || null,
+            phone: normalizedCustomerPhone,
             address: shipping.address,
             country: shipping.country || 'TR',
             city: shipping.city,
@@ -257,7 +297,12 @@ export async function POST(req: NextRequest) {
             .single();
 
         if (orderError || !order) {
-            console.error('[orders/create] Order insert error:', orderError?.message);
+            console.error('[orders/create] Order insert error:', {
+                message: orderError?.message,
+                code: (orderError as any)?.code,
+                details: (orderError as any)?.details,
+                hint: (orderError as any)?.hint,
+            });
             return NextResponse.json({ error: 'Could not create order.' }, { status: 500 });
         }
 

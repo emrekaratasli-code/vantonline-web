@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -21,7 +21,6 @@ interface ShippingData {
     lastName: string;
     email: string;
     phone: string;
-    country: string;
     address: string;
     country: string;
     city: string;
@@ -43,6 +42,13 @@ interface ShippingRateOption {
     estimatedDays: string | null;
     city: string;
 }
+
+type ShippingChoiceType = 'economy' | 'standard' | 'fast';
+
+type ShippingChoice = {
+    type: ShippingChoiceType;
+    option: ShippingRateOption;
+};
 
 type PaymentMethod = 'bank_transfer' | 'credit_card';
 
@@ -122,6 +128,66 @@ function isValidPhone(phone: string): boolean {
 
 function isValidEmail(email: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function getLeadTimeRank(value: string | null): number {
+    if (!value) return Number.MAX_SAFE_INTEGER;
+    const numbers = value.match(/\d+/g);
+    if (!numbers || numbers.length === 0) return Number.MAX_SAFE_INTEGER;
+    return Number(numbers[0] || Number.MAX_SAFE_INTEGER);
+}
+
+function getCheapestShippingOption(options: ShippingRateOption[]): ShippingRateOption | null {
+    if (!options.length) return null;
+    return [...options].sort((a, b) => {
+        const priceDiff = a.price - b.price;
+        if (priceDiff !== 0) return priceDiff;
+        return getLeadTimeRank(a.estimatedDays) - getLeadTimeRank(b.estimatedDays);
+    })[0] ?? null;
+}
+
+function buildShippingChoices(options: ShippingRateOption[]): ShippingChoice[] {
+    if (!options.length) return [];
+
+    const cheapest = getCheapestShippingOption(options);
+    if (!cheapest) return [];
+
+    const sortedByPrice = [...options].sort((a, b) => {
+        const priceDiff = a.price - b.price;
+        if (priceDiff !== 0) return priceDiff;
+        return getLeadTimeRank(a.estimatedDays) - getLeadTimeRank(b.estimatedDays);
+    });
+
+    const sortedBySpeed = [...options]
+        .sort((a, b) => {
+            const leadDiff = getLeadTimeRank(a.estimatedDays) - getLeadTimeRank(b.estimatedDays);
+            if (leadDiff !== 0) return leadDiff;
+            return a.price - b.price;
+        });
+
+    const fastestDistinct = sortedBySpeed.find((item) => item.carrierId !== cheapest.carrierId);
+
+    const fallbackDistinct = sortedByPrice.find((item) => item.carrierId !== cheapest.carrierId);
+
+    const fastOption = fastestDistinct ?? fallbackDistinct ?? null;
+    const usedIds = new Set<string>([cheapest.carrierId, ...(fastOption ? [fastOption.carrierId] : [])]);
+
+    let standardOption: ShippingRateOption | null = null;
+    if (options.length >= 3) {
+        const remaining = sortedByPrice.filter((item) => !usedIds.has(item.carrierId));
+        if (remaining.length > 0) {
+            standardOption = remaining[Math.floor((remaining.length - 1) / 2)] ?? remaining[0] ?? null;
+        }
+    }
+
+    const choices: ShippingChoice[] = [{ type: 'economy', option: cheapest }];
+    if (standardOption) {
+        choices.push({ type: 'standard', option: standardOption });
+    }
+    if (fastOption) {
+        choices.push({ type: 'fast', option: fastOption });
+    }
+    return choices;
 }
 
 type ThemedSelectFieldProps = {
@@ -270,6 +336,7 @@ export default function CheckoutPage() {
     const [shippingOptions, setShippingOptions] = useState<ShippingRateOption[]>([]);
     const [shippingLoading, setShippingLoading] = useState(false);
     const [shippingError, setShippingError] = useState('');
+    const [selectedShippingCarrierId, setSelectedShippingCarrierId] = useState('');
 
     // iyzico checkout form
     const [iyzicoFormHtml, setIyzicoFormHtml] = useState('');
@@ -279,7 +346,27 @@ export default function CheckoutPage() {
     const formatPrice = (kuruş: number) =>
         `${t.product.currency[lang]}${(kuruş / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
 
-    const selectedShippingRate = shippingOptions[0] ?? null;
+    const formatShippingInlinePrice = (kuruş: number) =>
+        lang === 'tr'
+            ? `${(kuruş / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL`
+            : formatPrice(kuruş);
+
+    const shippingChoices = useMemo(
+        () => buildShippingChoices(shippingOptions),
+        [shippingOptions],
+    );
+
+    const selectedShippingRate = useMemo(() => {
+        if (!shippingChoices.length) return null;
+        if (selectedShippingCarrierId) {
+            const selectedChoice = shippingChoices.find(
+                (choice) => choice.option.carrierId === selectedShippingCarrierId,
+            );
+            if (selectedChoice) return selectedChoice.option;
+        }
+        return shippingChoices[0]?.option ?? null;
+    }, [shippingChoices, selectedShippingCarrierId]);
+
     const shippingTotal = selectedShippingRate?.price ?? 0;
     const payableTotal = cartTotal + shippingTotal;
     const selectedCountry = HIGH_INCOME_COUNTRIES.find((option) => option.code === shipping.country);
@@ -464,6 +551,23 @@ export default function CheckoutPage() {
             setShipping((prev) => ({ ...prev, city: '' }));
         }
     }, [shipping.country, shipping.city]);
+
+    useEffect(() => {
+        if (!shippingChoices.length) {
+            setSelectedShippingCarrierId('');
+            return;
+        }
+
+        const alreadySelected = shippingChoices.some(
+            (choice) => choice.option.carrierId === selectedShippingCarrierId,
+        );
+        if (alreadySelected) return;
+
+        const cheapest = shippingChoices.find((choice) => choice.type === 'economy')?.option
+            ?? shippingChoices[0]?.option
+            ?? null;
+        setSelectedShippingCarrierId(cheapest?.carrierId ?? '');
+    }, [shippingChoices, selectedShippingCarrierId]);
 
 async function handleGoogleLogin() {
         setIsGoogleLoading(true);
@@ -659,7 +763,7 @@ async function handleGoogleLogin() {
                         estimatedDays: selectedShippingRate.estimatedDays,
                         resolvedCity: selectedShippingRate.city,
                     },
-                    customerPhone: toE164(shipping.phone),
+                    customerPhone: shipping.phone.trim() ? toE164(shipping.phone) : null,
                     paymentMethod,
                 }),
             });
@@ -677,7 +781,7 @@ async function handleGoogleLogin() {
                     body: JSON.stringify({
                         orderId: orderData.orderId,
                         shipping,
-                        customerPhone: toE164(shipping.phone),
+                        customerPhone: shipping.phone.trim() ? toE164(shipping.phone) : null,
                     }),
                 });
                 const paymentData = await paymentRes.json();
@@ -1274,6 +1378,52 @@ async function handleGoogleLogin() {
                             )}
 
                             {/* Shipping status */}
+                            {!shippingLoading && shippingChoices.length > 0 && (
+                                <div className="space-y-2">
+                                    <p className="text-xs font-heading uppercase tracking-wider text-vant-muted">
+                                        {lang === 'tr' ? 'Kargo Seçeneği' : 'Shipping Option'}
+                                    </p>
+
+                                    {shippingChoices.map((choice) => {
+                                        const option = choice.option;
+                                        const isSelected = selectedShippingRate?.carrierId === option.carrierId;
+                                        const packageLabel = choice.type === 'economy'
+                                            ? (lang === 'tr' ? 'Ekonomik' : 'Economy')
+                                            : choice.type === 'standard'
+                                                ? (lang === 'tr' ? 'Standart' : 'Standard')
+                                                : (lang === 'tr' ? 'Hızlı' : 'Fast');
+
+                                        const infoBits = [
+                                            option.carrierName,
+                                            option.estimatedDays || (lang === 'tr' ? 'Süre taşıyıcıya bağlı' : 'Time depends on carrier'),
+                                            formatShippingInlinePrice(option.price),
+                                        ];
+
+                                        return (
+                                            <button
+                                                key={`${choice.type}-${option.carrierId}`}
+                                                type="button"
+                                                onClick={() => setSelectedShippingCarrierId(option.carrierId)}
+                                                className={`w-full border p-3 text-left transition-all ${
+                                                    isSelected
+                                                        ? 'border-vant-purple bg-vant-purple/10'
+                                                        : 'border-vant-light/10 hover:border-vant-purple/40'
+                                                }`}
+                                            >
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-[10px] font-heading uppercase tracking-wider text-vant-purple">
+                                                        {packageLabel}
+                                                    </span>
+                                                    <span className="text-sm text-vant-light font-body">
+                                                        {infoBits.join(' · ')}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
                             <div className={`flex items-center gap-3 p-3 border ${selectedShippingRate ? 'border-green-500/20 bg-green-500/5' : 'border-yellow-500/20 bg-yellow-500/5'}`}>
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-5 h-5 flex-shrink-0 ${selectedShippingRate ? 'text-green-400' : 'text-yellow-400'}`}>
                                     <path d="M1.5 3.75A2.25 2.25 0 013.75 1.5h9A2.25 2.25 0 0115 3.75v9A2.25 2.25 0 0112.75 15H9.258a3.75 3.75 0 11-7.016 0H1.5V3.75zM3.75 15a2.25 2.25 0 100 4.5 2.25 2.25 0 000-4.5zM15.75 6a.75.75 0 01.75-.75h2.379a2.25 2.25 0 011.59.659l1.372 1.371c.422.422.659.995.659 1.591V15a.75.75 0 01-.75.75h-1.516a3.75 3.75 0 00-7.016 0H12a.75.75 0 01-.75-.75V6.75z" />
@@ -1283,12 +1433,12 @@ async function handleGoogleLogin() {
                                     {shippingLoading && (lang === 'tr' ? 'Kargo hesaplanıyor...' : 'Calculating shipping...')}
                                     {!shippingLoading && selectedShippingRate && (
                                         <>
-                                            <span className="text-green-400 font-heading uppercase tracking-wider">
-                                                {selectedShippingRate.carrierName}
-                                            </span>
                                             <span className="text-vant-light/80">
-                                                {' · '}{formatPrice(shippingTotal)}
-                                                {selectedShippingRate.estimatedDays ? ` · ${selectedShippingRate.estimatedDays}` : ''}
+                                                {selectedShippingRate.carrierName}
+                                                {' · '}
+                                                {selectedShippingRate.estimatedDays || (lang === 'tr' ? 'Süre taşıyıcıya bağlı' : 'Time depends on carrier')}
+                                                {' · '}
+                                                {formatShippingInlinePrice(shippingTotal)}
                                             </span>
                                         </>
                                     )}
