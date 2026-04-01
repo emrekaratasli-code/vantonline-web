@@ -13,7 +13,7 @@ Bu maddeler tamamlanmadan production cikisi onerilmez.
 - [ ] `npm run lint` basarili
 - [ ] `npm run build` basarili
 - [ ] Production environment variable isimleri tek standarda cekildi
-- [ ] `NEXT_PUBLIC_BASE_URL`, `NEXT_PUBLIC_SITE_URL`, `APP_BASE_URL` kullanimlari netlestirildi
+- [x] `NEXT_PUBLIC_BASE_URL`, `NEXT_PUBLIC_SITE_URL`, `APP_BASE_URL` kullanimlari netlestirildi
 - [ ] `API_SECRET_KEY` production degeri tanimlandi
 - [ ] `IYZICO_API_KEY`, `IYZICO_SECRET_KEY`, `IYZICO_BASE_URL` production degerleri tanimlandi
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` sadece server ortaminda tanimli
@@ -23,15 +23,15 @@ Bu maddeler tamamlanmadan production cikisi onerilmez.
 
 ### Environment tutarsizliklari
 
-- Checklist `NEXT_PUBLIC_SITE_URL` bekliyor
-- Layout metadata `NEXT_PUBLIC_BASE_URL` kullaniyor
-- Payment init route `NEXT_PUBLIC_SITE_URL` veya `APP_BASE_URL` kullaniyor
+- Kanonik degisken `NEXT_PUBLIC_SITE_URL` olarak sabitlendi
+- `NEXT_PUBLIC_BASE_URL` ve `APP_BASE_URL` gecici legacy fallback olarak tutuluyor
+- Layout metadata, `robots`, `sitemap` ve payment callback origin ortak helper uzerinden cozuluyor
 
 Yapilacak:
 
-- [ ] Tek bir resmi site URL env ismi sec
-- [ ] Layout, SEO ve payment callback taraflarini ayni env degiskenine bagla
-- [ ] `.env.example` ve `README.md` dosyalarini buna gore guncelle
+- [x] Tek bir resmi site URL env ismi sec
+- [x] Layout, SEO ve payment callback taraflarini ayni env degiskenine bagla
+- [x] `.env.example` ve `README.md` dosyalarini buna gore guncelle
 
 ### Contact form
 
@@ -41,8 +41,10 @@ Yapilacak:
 
 - [x] Contact formu ozel API route'a bagla
 - [x] Contact message tablosu icin migration hazirla
-- [ ] `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `CONTACT_NOTIFICATION_TO` production'da tanimla
-- [ ] Contact form submit sonrasi mail bildirimi test et
+- [x] `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `CONTACT_NOTIFICATION_TO` production'da tanimla
+- [x] Contact form submit sonrasi mail bildirimi test et
+- [ ] `UPSTASH_REDIS_REST_URL` ve `UPSTASH_REDIS_REST_TOKEN` production'da tanimla
+- [ ] Contact, send-otp ve verify-otp rate limit davranisini production smoke test ile dogrula
 
 ### Newsletter
 
@@ -56,12 +58,13 @@ Yapilacak:
 
 ### OTP rate limiting
 
-OTP rate limit su anda memory icinde tutuluyor. Bu yapi tek instance disinda guvenilir degil.
+OTP ve contact rate limit artik ortak helper ile Upstash Redis REST uzerinden calisacak sekilde hazirlandi. Env eksikse development fallback olarak memory kullaniliyor.
 
 Yapilacak:
 
-- [ ] Production icin Redis, Upstash veya benzeri kalici rate limiter ekle
+- [x] Production icin Redis, Upstash veya benzeri kalici rate limiter ekle
 - [ ] OTP akisini production ortaminda test et
+- [ ] Contact form limiter davranisini production ortaminda test et
 - [ ] `OTP_DEV_BYPASS=false` oldugunu canli ortamda dogrula
 
 ### Bank transfer bilgileri
@@ -119,6 +122,7 @@ Eksik veya dogrulanmasi gereken:
 - [ ] Hata mesajlari son kullaniciya fazla detay sizdirmiyor
 - [ ] Service role key client bundle icine sizmiyor
 - [ ] AI write endpointleri production secretlarla dogrulandi
+- [ ] Upstash fallback yerine kalici limiter'in production'da aktif oldugu dogrulandi
 
 ## 6. Icerik ve Marka Tarafi
 
@@ -152,12 +156,12 @@ Bu maddeler repo kodundan gorunmuyor; ekip karari veya panel kurulumu gerektiriy
 Ilk asamada bunlar yapilmali:
 
 1. Dependencies kur ve `lint` + `build` gecir
-2. Environment variable isimlerini standardize et
-3. Payment ve callback production domain ayarlarini sabitle
-4. Contact form ve banka bilgilerini gercek production verileriyle tamamla
+2. Upstash production env'lerini tanimla
+3. Payment ve callback production domain ayarlarini smoke test ile dogrula
+4. OTP ve contact rate limit davranisini production'da test et
 5. DB migration ve stock yapisini dogrula
-6. OTP ve genel rate limiting production seviyesine tasin
-7. Production smoke test yap
+6. Operasyonel smoke testleri kayda al
+7. Production monitoring ve alarm kurulumunu tamamla
 
 ## 10. Mevcut Durum Ozeti
 
@@ -173,7 +177,7 @@ Hazir gorunenler:
 Henuz kapanmayanlar:
 
 - [ ] Local build dogrulamasi
-- [ ] Production env standardizasyonu
+- [x] Production env standardizasyonu
 - [ ] Operasyonel hazirlik
 - [ ] Monitoring ve alarmlar
 - [ ] Production smoke test

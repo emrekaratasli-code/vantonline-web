@@ -38,6 +38,8 @@ SMTP_SECURE=true
 SMTP_USER=your_authenticated_mailbox
 SMTP_PASS=your_app_password
 CONTACT_NOTIFICATION_TO=you@yourdomain.com
+UPSTASH_REDIS_REST_URL=https://your-upstash-instance.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_upstash_rest_token
 
 # J.A.R.V.I.S. control mode (owner approval required for AI write actions)
 API_SECRET_KEY=your_api_secret_key
@@ -47,8 +49,10 @@ JARVIS_OWNER_APPROVAL_KEY=your_owner_only_approval_key
 
 Notes:
 - `NEXT_PUBLIC_SITE_URL` is the primary production domain variable for SEO and payment callbacks.
-- `NEXT_PUBLIC_BASE_URL` and `NEXT_PUBLIC_FB_PIXEL_ID` remain as legacy fallbacks for older setups.
+- `NEXT_PUBLIC_BASE_URL` and `APP_BASE_URL` are deprecated URL fallbacks kept only for migration safety.
+- `NEXT_PUBLIC_FB_PIXEL_ID` remains as a legacy analytics fallback for older setups.
 - Contact form email notifications use SMTP and require `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, and `CONTACT_NOTIFICATION_TO`.
+- OTP and contact rate limiting use Upstash Redis REST in production via `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`.
 
 When `JARVIS_REQUIRE_APPROVAL=true`, all write endpoints under `/api/ai/*` require:
 - `Authorization: Bearer <API_SECRET_KEY>`
@@ -102,8 +106,10 @@ Replace placeholder images in `/public/images/products/` and `/public/images/loo
 - [ ] Add OG image at `/public/og-image.jpg` (1200×630)
 - [ ] Add favicon at `/public/favicon.ico`
 - [ ] Wire newsletter form to email service (Mailchimp, ConvertKit, etc.)
-- [ ] Wire contact form (Formspree, Netlify Forms, or custom API)
+- [ ] Verify contact form DB save + email notification on production
 - [ ] Set `NEXT_PUBLIC_SITE_URL` in `.env.local` to your actual domain
+- [ ] Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+- [ ] Confirm `OTP_DEV_BYPASS=false` in production
 - [ ] Review all Turkish copy for brand consistency
 - [ ] Test on mobile devices
 - [ ] Run Lighthouse audit

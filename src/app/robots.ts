@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
+import { getCanonicalSiteUrl } from '@/lib/siteConfig';
 
 export default function robots(): MetadataRoute.Robots {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://yourdomain.com';
+    const baseUrl = getCanonicalSiteUrl();
 
     return {
         rules: [

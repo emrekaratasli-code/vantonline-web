@@ -11,14 +11,18 @@ Bu liste, prod ortama guvenli ve operasyonel sekilde cikis icin hazirlanmistir.
 - [ ] `IYZICO_API_KEY` canli anahtar tanimlandi
 - [ ] `IYZICO_SECRET_KEY` canli anahtar tanimlandi
 - [ ] `IYZICO_BASE_URL` canli endpoint olarak ayarlandi
-- [ ] `NEXT_PUBLIC_SITE_URL` canli domain olarak ayarlandi (https)
+- [x] `NEXT_PUBLIC_SITE_URL` canli domain olarak ayarlandi (https)
+- [ ] `NEXT_PUBLIC_BASE_URL` ve `APP_BASE_URL` deprecated fallback olarak kaldi
 - [ ] `NEXT_PUBLIC_META_PIXEL_ID` production pixel degeri ile tanimlandi
-- [ ] `SMTP_HOST` tanimlandi
-- [ ] `SMTP_PORT` dogrulandi
-- [ ] `SMTP_SECURE` dogrulandi
-- [ ] `SMTP_USER` tanimlandi
-- [ ] `SMTP_PASS` tanimlandi
-- [ ] `CONTACT_NOTIFICATION_TO` dogru alici adresine ayarlandi
+- [x] `SMTP_HOST` tanimlandi
+- [x] `SMTP_PORT` dogrulandi
+- [x] `SMTP_SECURE` dogrulandi
+- [x] `SMTP_USER` tanimlandi
+- [x] `SMTP_PASS` tanimlandi
+- [x] `CONTACT_NOTIFICATION_TO` dogru alici adresine ayarlandi
+- [ ] `UPSTASH_REDIS_REST_URL` tanimlandi
+- [ ] `UPSTASH_REDIS_REST_TOKEN` tanimlandi
+- [ ] `OTP_DEV_BYPASS=false` production'da dogrulandi
 
 ## 2) Database / Supabase
 
@@ -44,10 +48,12 @@ Bu liste, prod ortama guvenli ve operasyonel sekilde cikis icin hazirlanmistir.
 
 - [ ] `credit_card` akisi uctan uca test edildi
 - [ ] `bank_transfer` akisi uctan uca test edildi
+- [ ] `NEXT_PUBLIC_SITE_URL` canonical davranisi layout, robots ve sitemap icin dogrulandi
 - [ ] `order-success` sayfasina dogru siparis numarasi ile yonlendirme test edildi
 - [ ] Siparis olusurken toplam tutarin DB fiyatlariyla hesaplandigi dogrulandi
 - [ ] Sepet manipulasyonuna karsi fiyat guvenligi test edildi
 - [ ] Yetersiz stokta siparisin engellendigi test edildi
+- [ ] Payment callback URL production domain ile dogrulandi
 
 ## 5) Guvenlik
 
@@ -56,6 +62,9 @@ Bu liste, prod ortama guvenli ve operasyonel sekilde cikis icin hazirlanmistir.
 - [ ] Service Role key hicbir client bundle icine sizmiyor
 - [ ] Prod'da hata detaylari son kullaniciya dondurulmuyor
 - [ ] Rate limiting (CDN/WAF veya middleware) aktif
+- [ ] OTP send limiter 4. istekte `429` donuyor
+- [ ] OTP verify limiter 6. istekte `429` donuyor
+- [ ] Contact form limiter 6. istekte `429` donuyor
 
 ## 6) Hukuki ve Politika Metinleri
 
@@ -80,6 +89,7 @@ Bu liste, prod ortama guvenli ve operasyonel sekilde cikis icin hazirlanmistir.
 - [ ] Odeme basarisizlik orani izleniyor
 - [ ] Stok dusme hatalari izleniyor
 - [ ] Kritik olaylar icin mudahale proseduru var
+- [ ] Contact form submit + mail bildirimi smoke test'i kayda alindi
 
 ## 9) Son Release Kontrolu
 

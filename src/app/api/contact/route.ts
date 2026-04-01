@@ -1,21 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase';
 import { getContactMailer } from '@/lib/smtp';
+import { consumeRateLimit } from '@/lib/rateLimit';
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_WINDOW_MS = 60_000;
 const MAX_REQUESTS = 5;
-
-function isRateLimited(key: string): boolean {
-    const now = Date.now();
-    const entry = rateLimitMap.get(key);
-    if (!entry || now > entry.resetAt) {
-        rateLimitMap.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
-        return false;
-    }
-    entry.count += 1;
-    return entry.count > MAX_REQUESTS;
-}
 
 function isValidEmail(email: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -111,7 +100,22 @@ export async function POST(req: NextRequest) {
         }
 
         const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-        if (isRateLimited(`contact:ip:${ip}`) || isRateLimited(`contact:email:${normalizedEmail}`)) {
+        const [emailLimit, ipLimit] = await Promise.all([
+            consumeRateLimit({
+                namespace: 'contact:email',
+                key: normalizedEmail,
+                limit: MAX_REQUESTS,
+                windowMs: RATE_WINDOW_MS,
+            }),
+            consumeRateLimit({
+                namespace: 'contact:ip',
+                key: ip,
+                limit: MAX_REQUESTS,
+                windowMs: RATE_WINDOW_MS,
+            }),
+        ]);
+
+        if (emailLimit.limited || ipLimit.limited) {
             return NextResponse.json({ ok: false, error: 'Too many requests.' }, { status: 429 });
         }
 

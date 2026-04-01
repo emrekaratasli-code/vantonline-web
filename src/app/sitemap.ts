@@ -1,8 +1,9 @@
 import { MetadataRoute } from 'next';
 import { createServerSupabaseClient } from '@/lib/supabase';
+import { getCanonicalSiteUrl } from '@/lib/siteConfig';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://yourdomain.com';
+    const baseUrl = getCanonicalSiteUrl();
 
     // Static routes
     const staticRoutes: MetadataRoute.Sitemap = [

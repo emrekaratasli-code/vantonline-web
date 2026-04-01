@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getIyzipay } from '@/lib/iyzico';
 import { createServiceRoleClient } from '@/lib/supabase';
+import { getCanonicalSiteUrl } from '@/lib/siteConfig';
 import Iyzipay from 'iyzipay';
 
 /* ------------------------------------------------------------------ */
@@ -81,10 +82,7 @@ export async function POST(req: NextRequest) {
 
         const iyzipay = getIyzipay();
 
-        const configuredBaseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.APP_BASE_URL;
-        const protocol = req.headers.get('x-forwarded-proto') || 'http';
-        const host = req.headers.get('host') || 'localhost:3000';
-        const baseUrl = configuredBaseUrl || `${protocol}://${host}`;
+        const baseUrl = getCanonicalSiteUrl();
 
         const priceStr = (payableTotal / 100).toFixed(2);
 

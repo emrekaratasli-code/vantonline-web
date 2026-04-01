@@ -1,8 +1,9 @@
 ﻿import type { Metadata } from 'next';
 import './globals.css';
 import ClientLayout from '@/components/ClientLayout';
+import { getCanonicalSiteUrl } from '@/lib/siteConfig';
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.vantonline.com';
+const baseUrl = getCanonicalSiteUrl();
 
 export const metadata: Metadata = {
     metadataBase: new URL(baseUrl),

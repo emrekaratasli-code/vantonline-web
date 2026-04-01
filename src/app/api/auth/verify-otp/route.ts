@@ -1,71 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase';
+import { consumeRateLimit } from '@/lib/rateLimit';
 
-/* ------------------------------------------------------------------ */
-/*  Simple in-memory rate limiter for verification attempts            */
-/* ------------------------------------------------------------------ */
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_WINDOW_MS = 60_000; // 1 minute
-const MAX_ATTEMPTS = 5; // 5 verify attempts per minute
+const RATE_WINDOW_MS = 60_000;
+const MAX_ATTEMPTS = 5;
 
-function isRateLimited(key: string): boolean {
-    const now = Date.now();
-    const entry = rateLimitMap.get(key);
-    if (!entry || now > entry.resetAt) {
-        rateLimitMap.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
-        return false;
-    }
-    entry.count += 1;
-    return entry.count > MAX_ATTEMPTS;
-}
-
-/* ------------------------------------------------------------------ */
-/*  POST /api/auth/verify-otp                                          */
-/* ------------------------------------------------------------------ */
 export async function POST(req: NextRequest) {
     try {
         const { email, phone, code, customer, consents } = await req.json();
+        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
         const otpDevBypassEnabled = process.env.OTP_DEV_BYPASS === 'true';
         const otpDevCode = process.env.OTP_DEV_CODE || '123456';
 
-        if (!email || !code || typeof code !== 'string' || code.length !== 6) {
+        if (!normalizedEmail || !code || typeof code !== 'string' || code.length !== 6) {
             return NextResponse.json(
-                { error: 'Geçersiz istek.' },
+                { error: 'Gecersiz istek.' },
                 { status: 400 },
             );
         }
 
-        // Rate limit
         const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-        if (isRateLimited(`verify:${email}`) || isRateLimited(`verify-ip:${ip}`)) {
+        const [emailLimit, ipLimit] = await Promise.all([
+            consumeRateLimit({
+                namespace: 'otp-verify:email',
+                key: normalizedEmail,
+                limit: MAX_ATTEMPTS,
+                windowMs: RATE_WINDOW_MS,
+            }),
+            consumeRateLimit({
+                namespace: 'otp-verify:ip',
+                key: ip,
+                limit: MAX_ATTEMPTS,
+                windowMs: RATE_WINDOW_MS,
+            }),
+        ]);
+
+        if (emailLimit.limited || ipLimit.limited) {
             return NextResponse.json(
-                { error: 'Çok fazla deneme. Lütfen bir dakika bekleyin.' },
+                { error: 'Cok fazla deneme. Lutfen bir dakika bekleyin.' },
                 { status: 429 },
             );
         }
 
         const supabase = createServerSupabaseClient();
         if (!supabase) {
-            return NextResponse.json({ error: 'Sistem hatası.' }, { status: 500 });
+            return NextResponse.json({ error: 'Sistem hatasi.' }, { status: 500 });
         }
 
-        // Dev bypass — accept 123456 in development without hitting Auth API
         if (otpDevBypassEnabled && code === otpDevCode) {
-            console.log('[verify-otp] DEV BYPASS active - accepting test code for ' + email);
+            console.log('[verify-otp] DEV BYPASS active - accepting test code for ' + normalizedEmail);
 
             const serviceClient = createServiceRoleClient();
             if (serviceClient) {
                 await serviceClient
                     .from('customers')
-                    .upsert({ email, phone: phone || null, verified: true }, { onConflict: 'email' });
+                    .upsert({ email: normalizedEmail, phone: phone || null, verified: true }, { onConflict: 'email' });
             }
 
             return NextResponse.json({ ok: true, dev: true, bypass: true });
         }
 
-        // Verify OTP via Email
         const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
-            email,
+            email: normalizedEmail,
             token: code,
             type: 'email',
         });
@@ -73,28 +69,25 @@ export async function POST(req: NextRequest) {
         if (verifyError) {
             console.error('[verify-otp] Supabase verify error:', verifyError.message);
             return NextResponse.json(
-                { error: 'Geçersiz kod. Tekrar deneyin.' },
+                { error: 'Gecersiz kod. Tekrar deneyin.' },
                 { status: 400 },
             );
         }
 
-        // --- On successful verification, upsert customer & log consents --- //
         const serviceClient = createServiceRoleClient();
         if (!serviceClient) {
-            // Non-critical: OTP is already verified, just can't save customer data.
-            console.error('[verify-otp] Service role client unavailable — skipping customer upsert.');
+            console.error('[verify-otp] Service role client unavailable - skipping customer upsert.');
             return NextResponse.json({ ok: true, verified: true });
         }
 
         const authUserId = verifyData.user?.id ?? null;
         const now = new Date().toISOString();
 
-        // Upsert customer
         const { data: customerRow, error: customerError } = await serviceClient
             .from('customers')
             .upsert(
                 {
-                    email,
+                    email: normalizedEmail,
                     phone: phone || null,
                     first_name: customer?.firstName || null,
                     last_name: customer?.lastName || null,
@@ -108,13 +101,11 @@ export async function POST(req: NextRequest) {
 
         if (customerError) {
             console.error('[verify-otp] Customer upsert error:', customerError.message);
-            // Non-critical — OTP is still verified.
             return NextResponse.json({ ok: true, verified: true });
         }
 
         const customerId = customerRow?.id;
 
-        // Log marketing consents (only if customer was created)
         if (customerId && consents) {
             const consentRows: Array<{
                 customer_id: string;
@@ -166,6 +157,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: true, verified: true });
     } catch (e) {
         console.error('[verify-otp] Unexpected error:', e);
-        return NextResponse.json({ error: 'Sunucu hatası.' }, { status: 500 });
+        return NextResponse.json({ error: 'Sunucu hatasi.' }, { status: 500 });
     }
 }

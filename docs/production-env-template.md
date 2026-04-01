@@ -24,6 +24,9 @@ SMTP_USER=
 SMTP_PASS=
 CONTACT_NOTIFICATION_TO=you@yourdomain.com
 
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+
 API_SECRET_KEY=
 JARVIS_REQUIRE_APPROVAL=true
 JARVIS_OWNER_APPROVAL_KEY=
@@ -47,17 +50,20 @@ NEXT_PUBLIC_HERO_VIDEO_FALLBACK_URL=/videos/hero.mp4
 Yeni kurulumlarda bunlari doldurmak gerekmez. Eski kod veya gecis sureci icin tutulur.
 
 ```env
-NEXT_PUBLIC_BASE_URL=https://www.vantonline.com
+# NEXT_PUBLIC_BASE_URL=https://www.vantonline.com
+# APP_BASE_URL=https://www.vantonline.com
 NEXT_PUBLIC_FB_PIXEL_ID=
 ```
 
 ## Notlar
 
 - `NEXT_PUBLIC_SITE_URL` ana production domain degiskenidir.
+- `NEXT_PUBLIC_BASE_URL` ve `APP_BASE_URL` sadece gecis sureci fallback'idir.
 - `SUPABASE_SERVICE_ROLE_KEY` sadece server ortaminda olmali, client bundle'a sizmamali.
 - `API_SECRET_KEY` en az 32 karakter ve rastgele olmalidir.
 - `JARVIS_OWNER_APPROVAL_KEY` ayri bir secret olmali; `API_SECRET_KEY` ile ayni olmamali.
 - `OTP_DEV_BYPASS=false` production'da zorunludur.
+- `UPSTASH_REDIS_REST_URL` ve `UPSTASH_REDIS_REST_TOKEN` production rate limiting icin zorunludur.
 - `IYZICO_BASE_URL` canli endpoint ile teyit edilmelidir.
 - Contact form backend kaydi icin `docs/migration-contact-messages.sql` uygulanmalidir.
 - Contact email bildirimi icin SMTP hesabinin app password/relay ayari production'da dogrulanmis olmalidir.
@@ -66,6 +72,7 @@ NEXT_PUBLIC_FB_PIXEL_ID=
 
 - [ ] Tum zorunlu degiskenler production paneline girildi
 - [ ] `NEXT_PUBLIC_SITE_URL` gercek domain ile eslesiyor
+- [ ] Upstash Redis REST degerleri girildi
 - [ ] Pixel ve analytics degerleri dogrulandi
 - [ ] Dev bypass kapali
 - [ ] iyzico canli anahtarlari kullaniliyor
