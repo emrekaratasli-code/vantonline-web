@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
             address?: string;
             country?: string;
             city?: string;
-            country?: string;
             email?: string;
             phone?: string;
             shippingTotal?: number;
