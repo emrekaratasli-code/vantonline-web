@@ -1,93 +1,99 @@
 # VANT Go-Live Checklist
 
-Bu liste, prod ortama güvenli ve operasyonel şekilde çıkış için hazırlanmıştır.
+Bu liste, prod ortama guvenli ve operasyonel sekilde cikis icin hazirlanmistir.
 
 ## 1) Environment ve Secrets
 
-- [ ] `NEXT_PUBLIC_SUPABASE_URL` prod değeri girildi
-- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` prod değeri girildi
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` sadece server ortamında tanımlandı
-- [ ] `API_SECRET_KEY` güçlü bir değerle tanımlandı (en az 32 karakter)
-- [ ] `IYZICO_API_KEY` canlı anahtar tanımlandı
-- [ ] `IYZICO_SECRET_KEY` canlı anahtar tanımlandı
-- [ ] `IYZICO_BASE_URL` canlı endpoint olarak ayarlandı
-- [ ] `NEXT_PUBLIC_SITE_URL` canlı domain olarak ayarlandı (https)
+- [ ] `NEXT_PUBLIC_SUPABASE_URL` prod degeri girildi
+- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` prod degeri girildi
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` sadece server ortaminda tanimlandi
+- [ ] `API_SECRET_KEY` guclu bir degerle tanimlandi (en az 32 karakter)
+- [ ] `IYZICO_API_KEY` canli anahtar tanimlandi
+- [ ] `IYZICO_SECRET_KEY` canli anahtar tanimlandi
+- [ ] `IYZICO_BASE_URL` canli endpoint olarak ayarlandi
+- [ ] `NEXT_PUBLIC_SITE_URL` canli domain olarak ayarlandi (https)
+- [ ] `NEXT_PUBLIC_META_PIXEL_ID` production pixel degeri ile tanimlandi
+- [ ] `SMTP_HOST` tanimlandi
+- [ ] `SMTP_PORT` dogrulandi
+- [ ] `SMTP_SECURE` dogrulandi
+- [ ] `SMTP_USER` tanimlandi
+- [ ] `SMTP_PASS` tanimlandi
+- [ ] `CONTACT_NOTIFICATION_TO` dogru alici adresine ayarlandi
 
 ## 2) Database / Supabase
 
-- [ ] `docs/migration-orders.sql` çalıştırıldı
-- [ ] `docs/fix-orders-columns.sql` çalıştırıldı
-- [ ] `docs/migration-stock.sql` çalıştırıldı
-- [ ] `orders` tablosunda `payment_method`, `payment_token`, `payment_id`, `shipping_address`, `total`, `currency` kolonları doğrulandı
-- [ ] `order_items` tablosunda `product_name`, `color`, `size`, `unit_price` kolonları doğrulandı
-- [ ] `decrement_product_stock` fonksiyonunun yetersiz stokta `FALSE` döndüğü test edildi
-- [ ] Ürünlerde `stock_quantity` değerleri gerçek stoklara göre dolduruldu
+- [ ] `docs/migration-orders.sql` calistirildi
+- [ ] `docs/fix-orders-columns.sql` calistirildi
+- [ ] `docs/migration-stock.sql` calistirildi
+- [ ] `orders` tablosunda `payment_method`, `payment_token`, `payment_id`, `shipping_address`, `total`, `currency` kolonlari dogrulandi
+- [ ] `order_items` tablosunda `product_name`, `color`, `size`, `unit_price` kolonlari dogrulandi
+- [ ] `decrement_product_stock` fonksiyonunun yetersiz stokta `FALSE` dondugu test edildi
+- [ ] Urunlerde `stock_quantity` degerleri gercek stoklara gore dolduruldu
 
 ## 3) Payment (iyzico)
 
-- [ ] Merchant hesabı canlıda aktif ve onaylı
-- [ ] 3D Secure akışı canlı test edildi
-- [ ] Başarılı ödeme sonrası sipariş `paid` oluyor
-- [ ] Başarısız ödeme sonrası sipariş `cancelled` oluyor
-- [ ] Callback URL doğrulandı: `https://<domain>/api/payment/callback`
-- [ ] Callback token eşleşme kontrolü loglarda doğrulandı
-- [ ] Taksit seçenekleri işletme kararıyla netleştirildi
+- [ ] Merchant hesabi canlida aktif ve onayli
+- [ ] 3D Secure akisi canli test edildi
+- [ ] Basarili odeme sonrasi siparis `paid` oluyor
+- [ ] Basarisiz odeme sonrasi siparis `cancelled` oluyor
+- [ ] Callback URL dogrulandi: `https://<domain>/api/payment/callback`
+- [ ] Callback token eslesme kontrolu loglarda dogrulandi
+- [ ] Taksit secenekleri isletme karariyla netlestirildi
 
-## 4) Checkout ve Sipariş Akışı
+## 4) Checkout ve Siparis Akisi
 
-- [ ] `credit_card` akışı uçtan uca test edildi
-- [ ] `bank_transfer` akışı uçtan uca test edildi
-- [ ] `order-success` sayfasına doğru sipariş numarası ile yönlendirme test edildi
-- [ ] Sipariş oluşurken toplam tutarın DB fiyatlarıyla hesaplandığı doğrulandı
-- [ ] Sepet manipülasyonuna karşı fiyat güvenliği test edildi
-- [ ] Yetersiz stokta siparişin engellendiği test edildi
+- [ ] `credit_card` akisi uctan uca test edildi
+- [ ] `bank_transfer` akisi uctan uca test edildi
+- [ ] `order-success` sayfasina dogru siparis numarasi ile yonlendirme test edildi
+- [ ] Siparis olusurken toplam tutarin DB fiyatlariyla hesaplandigi dogrulandi
+- [ ] Sepet manipulasyonuna karsi fiyat guvenligi test edildi
+- [ ] Yetersiz stokta siparisin engellendigi test edildi
 
-## 5) Güvenlik
+## 5) Guvenlik
 
-- [ ] `/api/ai/*` endpointleri sadece `Bearer API_SECRET_KEY` ile erişilebilir
-- [ ] `/api/orders/[id]` endpointi auth korumalı çalışıyor
-- [ ] Service Role key hiçbir client bundle içine sızmıyor
-- [ ] Prod’da hata detayları son kullanıcıya döndürülmüyor
+- [ ] `/api/ai/*` endpointleri sadece `Bearer API_SECRET_KEY` ile erisilebilir
+- [ ] `/api/orders/[id]` endpointi auth korumali calisiyor
+- [ ] Service Role key hicbir client bundle icine sizmiyor
+- [ ] Prod'da hata detaylari son kullaniciya dondurulmuyor
 - [ ] Rate limiting (CDN/WAF veya middleware) aktif
 
 ## 6) Hukuki ve Politika Metinleri
 
-- [ ] Mesafeli Satış Sözleşmesi güncel
-- [ ] KVKK metni güncel
-- [ ] Gizlilik Politikası güncel
-- [ ] İade ve Kargo politikaları güncel
-- [ ] Checkout onay metinleri hukuk metinleriyle tutarlı
+- [ ] Mesafeli Satis Sozlesmesi guncel
+- [ ] KVKK metni guncel
+- [ ] Gizlilik Politikasi guncel
+- [ ] Iade ve Kargo politikalari guncel
+- [ ] Checkout onay metinleri hukuk metinleriyle tutarli
 
 ## 7) Operasyon
 
-- [ ] Yeni sipariş bildirimi (mail/panel) aktif
-- [ ] Kargo operasyon adımları dokümante edildi
-- [ ] Havale/EFT doğrulama süreci tanımlandı
-- [ ] İade/iptal/refund sorumluları net
-- [ ] Müşteri destek iletişim kanalı hazır
+- [ ] Yeni siparis bildirimi (mail/panel) aktif
+- [ ] Kargo operasyon adimlari dokumante edildi
+- [ ] Havale/EFT dogrulama sureci tanimlandi
+- [ ] Iade/iptal/refund sorumlulari net
+- [ ] Musteri destek iletisim kanali hazir
 
-## 8) İzleme ve Olay Yönetimi
+## 8) Izleme ve Olay Yonetimi
 
 - [ ] Prod log takibi aktif (Vercel/Sentry vb.)
-- [ ] 5xx hata alarmı tanımlandı
-- [ ] Ödeme başarısızlık oranı izleniyor
-- [ ] Stok düşme hataları izleniyor
-- [ ] Kritik olaylar için müdahale prosedürü var
+- [ ] 5xx hata alarmi tanimlandi
+- [ ] Odeme basarisizlik orani izleniyor
+- [ ] Stok dusme hatalari izleniyor
+- [ ] Kritik olaylar icin mudahale proseduru var
 
-## 9) Son Release Kontrolü
+## 9) Son Release Kontrolu
 
-- [ ] `npm run lint` çalıştı (bloklayıcı hata yok)
-- [ ] `npm run build` başarılı
-- [ ] Prod deploy tamamlandı
-- [ ] Deploy sonrası smoke test tamamlandı
-- [ ] İlk 24 saat izleme planı aktif
+- [ ] `npm run lint` calisti (bloklayici hata yok)
+- [ ] `npm run build` basarili
+- [ ] Prod deploy tamamlandi
+- [ ] Deploy sonrasi smoke test tamamlandi
+- [ ] Ilk 24 saat izleme plani aktif
 
 ---
 
 ## Go / No-Go
 
-- [ ] Tüm kritik maddeler tamamlandı
-- [ ] Canlıya çıkış onayı verildi
-- [ ] Çıkış zamanı: `____ / ____ / ______  ____:____`
+- [ ] Tum kritik maddeler tamamlandi
+- [ ] Canliya cikis onayi verildi
+- [ ] Cikis zamani: `____ / ____ / ______  ____:____`
 - [ ] Onaylayan: `__________________`
-
